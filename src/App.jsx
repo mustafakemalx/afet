@@ -6,7 +6,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import './index.css';
 
-const API_BASE = import.meta.env.PROD ? 'https://afet.onrender.com' : 'http://localhost:5000';
+const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:5000';
 
 function getSite(scenario, siteId) {
   return scenario?.sites?.find((site) => site.id === siteId) || null;
