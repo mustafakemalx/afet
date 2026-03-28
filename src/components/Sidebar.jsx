@@ -193,9 +193,9 @@ export default function Sidebar({
 
             <div className="toggle-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               {[
-                { id: 'satellite', label: 'Uydu' },
-                { id: 'dark', label: 'Gece' },
                 { id: 'street', label: 'Sokak' },
+                { id: 'dark', label: 'Gece' },
+                { id: 'satellite', label: 'Uydu' },
               ].map((option) => (
                 <button
                   key={option.id}

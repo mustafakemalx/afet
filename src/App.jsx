@@ -24,7 +24,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isRouting, setIsRouting] = useState(false);
   const [theme, setTheme] = useState('dark');
-  const [mapStyle, setMapStyle] = useState('satellite');
+  const [mapStyle, setMapStyle] = useState('street');
   const [isOffline, setIsOffline] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
