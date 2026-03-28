@@ -138,10 +138,10 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
       const tryFetchRoute = (waypointCount) => {
         let waypoints = [];
         if (pts.length > 0 && waypointCount > 0) {
-          const step = pts.length / (waypointCount + 1);
+          const step = Math.max(1, Math.floor(pts.length / (waypointCount + 1)));
           for (let i = 1; i <= waypointCount; i++) {
-            const pt = pts[Math.floor(i * step)];
-            if (pt) waypoints.push({ location: toLatLng(pt), stopover: false });
+            const pt = pts[i * step];
+            if (pt) waypoints.push({ location: toLatLng(pt) }); // 'stopover: true' varsayılan, optimizeWaypoints bununla iyi çalışır
           }
         }
 
@@ -150,7 +150,8 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
             origin,
             destination,
             waypoints,
-            travelMode: window.google.maps.TravelMode.DRIVING,
+            optimizeWaypoints: true, // Google'ın Yapay Zekasına noktalar arasında en mantıklı (U dönüşsüz) sırayı bulmasını söyler
+            travelMode: window.google.maps.TravelMode.DRIVING, // Yalnızca Araç
           },
           (result, status) => {
             if (status === window.google.maps.DirectionsStatus.OK) {
@@ -159,9 +160,8 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
                 [routeKey]: { result, originalPath: route.path }
               }));
             } else if (status === window.google.maps.DirectionsStatus.ZERO_RESULTS && waypointCount > 0) {
-              // Google couldn't find a path matching exactly our mathematical grid waypoints. Retry with fewer/no waypoints.
               console.warn(`Waypoints too strict for ${routeKey}, retrying with fewer points...`);
-              tryFetchRoute(waypointCount === 3 ? 1 : 0);
+              tryFetchRoute(0); // Noktalar tamamen hatalıysa sıfır nokta (en azından dümdüz gitsin)
             } else if (status === window.google.maps.DirectionsStatus.REQUEST_DENIED) {
               console.error('Google Maps Directions API is NOT enabled! Please enable it in Google Cloud Console.');
               alert('DİKKAT: Google Maps "Directions API" hesabınızda kapalı! Yolları takip eden navigasyon çizgisi için Google Cloud paneline girip "Directions API" yi aktifleştirmeniz gerekmektedir.');
@@ -172,7 +172,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         );
       };
 
-      tryFetchRoute(3); // First try with just 3 waypoints so it avoids hazards but doesn't get confused by minor grid points
+      tryFetchRoute(2); // Sadece hedefe yakın ve başlangıca yakın 2 ana kırılma noktası vererek haritayı temiz tutarız
     });
   }, [routeData, directionsCache, isLoaded]);
 
