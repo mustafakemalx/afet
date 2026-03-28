@@ -138,6 +138,52 @@ const SCENARIOS = [
       { id: 'sc-2', label: 'Askeri Lojistik Transfer Şeridi', path: [[41.0104, 28.9812], [41.0188, 28.9726]], widthKm: 0.18, boost: 20 },
     ],
   },
+  {
+    id: 'trabzon-flood',
+    name: 'Trabzon Sel ve Heyelan Koridoru',
+    city: 'Trabzon',
+    center: [41.0015, 39.7178],
+    bounds: [
+      [40.982, 39.676],
+      [41.024, 39.766],
+    ],
+    mission: {
+      title: 'Yagis kaynakli sel ve heyelan lojistik yonetimi',
+      brief:
+        'Trabzon merkez ve kiyi hattinda sel, su taskini ve heyelan riskleri icin acil mudahale ekiplerinin guvenli ulasim koridorlari hesaplanmaktadir.',
+      updatedAt: new Date().toISOString(),
+      nextWindow: new Date(Date.now() + 10 * 60000).toISOString(),
+      scanAgeMinutes: 5,
+      sourceLabel: 'Sentinel-2 + Yerel Izleme',
+      resolutionLabel: '10 m',
+      scanAreaKm2: 19.2,
+      confidence: 0.9,
+    },
+    weather: {
+      temperatureC: 14,
+      windKmh: 18,
+      humidity: 82,
+      visibilityKm: 6.5,
+    },
+    sites: [
+      { id: 'cmd', label: 'Trabzon AFAD Koordinasyon', role: 'command', coords: [40.9971, 39.7193] },
+      { id: 'log', label: 'Trabzon Lojistik Transfer', role: 'logistics', coords: [41.0116, 39.7442] },
+      { id: 'field', label: 'Acil Saglik Noktasi', role: 'hospital', coords: [41.0073, 39.7057] },
+      { id: 'shelter', label: 'Toplanma Alani', role: 'shelter', coords: [40.9924, 39.6944] },
+      { id: 'rescue', label: 'Riskli Dere Yatagi', role: 'target', coords: [41.0163, 39.7338] },
+    ],
+    defaultRoute: { startSiteId: 'cmd', endSiteId: 'rescue' },
+    hazards: [
+      { id: 'hz-1', type: 'flood', label: 'Dere Taskini', center: [41.0122, 39.7264], radiusKm: 0.74, severity: 0.91 },
+      { id: 'hz-2', type: 'landslide', label: 'Yamac Kaymasi', center: [40.9968, 39.7392], radiusKm: 0.52, severity: 0.86 },
+      { id: 'hz-3', type: 'debris', label: 'Yol Uzeri Moloz', center: [41.0051, 39.7093], radiusKm: 0.39, severity: 0.78 },
+      { id: 'hz-4', type: 'bridge', label: 'Menfez Hasari', center: [41.0175, 39.7451], radiusKm: 0.33, severity: 0.83 },
+    ],
+    safeCorridors: [
+      { id: 'sc-1', label: 'Sahil Acil Intikal Hatti', path: [[40.9973, 39.6876], [41.0144, 39.7482]], widthKm: 0.31, boost: 24 },
+      { id: 'sc-2', label: 'Kuzey Transfer Seridi', path: [[40.9898, 39.7051], [41.0216, 39.7367]], widthKm: 0.25, boost: 18 },
+    ],
+  },
 ];
 
 const HAZARD_META = {
