@@ -40,10 +40,10 @@ const SCENARIOS = [
     defaultRoute: { startSiteId: 'cmd', endSiteId: 'rescue' },
     hazards: [
       { id: 'hz-1', type: 'collapse', label: 'Blok Halinde Yapısal Çökme', center: [36.2002, 36.1577], radiusKm: 0.75, severity: 0.96 },
-      { id: 'hz-2', type: 'debris', label: 'Ana Arter Üzeri Yığın Enkaz', center: [36.2059, 36.1699], radiusKm: 0.48, severity: 0.89 },
-      { id: 'hz-3', type: 'flood', label: 'Asi Nehri Taşkın Etkisi', center: [36.1968, 36.1728], radiusKm: 0.52, severity: 0.78 },
-      { id: 'hz-4', type: 'bridge', label: 'Köprü Ayağında Fiziksel Hasar', center: [36.2037, 36.1814], radiusKm: 0.44, severity: 0.94 },
-      { id: 'hz-5', type: 'gas', label: 'Doğalgaz Ana Dağıtım Sızıntısı', center: [36.2089, 36.1626], radiusKm: 0.36, severity: 0.82 },
+      { id: 'hz-2', type: 'collapse', label: 'Ağır Hasarlı Bina Kümesi', center: [36.2059, 36.1699], radiusKm: 0.48, severity: 0.89 },
+      { id: 'hz-3', type: 'collapse', label: 'Yıkılmış Toplu Konut Alanı', center: [36.1968, 36.1728], radiusKm: 0.52, severity: 0.78 },
+      { id: 'hz-4', type: 'collapse', label: 'Kritik Yapısal Hasar', center: [36.2037, 36.1814], radiusKm: 0.44, severity: 0.94 },
+      { id: 'hz-5', type: 'collapse', label: 'Fay Kırığı Çöküntüsü', center: [36.2089, 36.1626], radiusKm: 0.36, severity: 0.82 },
     ],
     safeCorridors: [
       { id: 'sc-1', label: 'Kuzey Otoyolu Güvenli Sevk Aksı', path: [[36.1932, 36.1449], [36.2119, 36.1826]], widthKm: 0.42, boost: 30 },
