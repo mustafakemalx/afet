@@ -79,11 +79,11 @@ export default function Dashboard({
         blk: prev.blk + (Math.random() > 0.98 ? 1 : 0),
         
         // Meteoroloji istasyonu canlı sensör simülasyonu (birikimsiz/driftsiz sabit radyo oynamaları)
-        temp: (Math.random() * 0.4 - 0.2), // ±0.2 oynama
-        humid: Math.floor(Math.random() * 3) - 1, // ±1 birim
-        wind: (Math.random() * 1.6 - 0.8), // ±0.8 oynama
+        temp: (Math.random() * 0.2 - 0.1), // ±0.1 derece oynama çok yavaş ve gerçekçi
+        humid: Math.floor(Math.random() * 2) === 1 ? 1 : 0, // Sadece 0 veya 1 (çok nadir oynar)
+        wind: (Math.random() * 0.6 - 0.3), // ±0.3 km/sa oynama
       }));
-    }, 3000);
+    }, 4500); // 4.5 saniyede bir güncellenerek daha sakin kalacak
     
     return () => clearInterval(interval);
   }, [scenario?.id]);
