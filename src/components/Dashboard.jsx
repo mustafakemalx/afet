@@ -286,27 +286,27 @@ export default function Dashboard({
         <div className="metric-grid compact" style={{gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '10px'}}>
           <div className="metric-card">
             <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Tent size={14} /> <span>Çadır (Ort.)</span></div>
-            <strong>{scenario ? Math.floor(rawAffectedPop / 12).toLocaleString('tr-TR') : 0} Adet</strong>
+            <strong>{scenario ? Math.floor(livePop / 12).toLocaleString('tr-TR') : 0} Adet</strong>
           </div>
           <div className="metric-card">
             <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Droplets size={14} /> <span>Su İhtiyacı</span></div>
-            <strong>{scenario ? Math.floor(rawAffectedPop / 1500).toLocaleString('tr-TR') : 0} Ton</strong>
+            <strong>{scenario ? Math.floor(livePop / 1500).toLocaleString('tr-TR') : 0} Ton</strong>
           </div>
           <div className="metric-card">
             <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Truck size={14} /> <span>Ambulans</span></div>
-            <strong>{scenario ? Math.floor(rawAffectedPop / 4500).toLocaleString('tr-TR') : 0} Araç</strong>
+            <strong>{scenario ? Math.floor(livePop / 4500).toLocaleString('tr-TR') : 0} Araç</strong>
           </div>
           <div className="metric-card">
             <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Users size={14} /> <span>Personel</span></div>
-            <strong>{scenario ? Math.floor(rawAffectedPop / 800).toLocaleString('tr-TR') : 0} Ekip</strong>
+            <strong>{scenario ? Math.floor(livePop / 800).toLocaleString('tr-TR') : 0} Ekip</strong>
           </div>
           <div className="metric-card">
             <div style={{display:'flex', alignItems:'center', gap:'4px', color:'var(--rose)'}}><Activity size={14} /> <span>S. Hastane</span></div>
-            <strong>{scenario ? Math.max(2, Math.floor(rawAffectedPop / 35000)) : 0} Birim</strong>
+            <strong>{scenario ? Math.max(2, Math.floor(livePop / 35000)) : 0} Birim</strong>
           </div>
           <div className="metric-card">
             <div style={{display:'flex', alignItems:'center', gap:'4px', color:'var(--amber)'}}><ShieldCheck size={14} /> <span>Kışla/Ordu</span></div>
-            <strong>{scenario ? Math.max(1, Math.floor(rawAffectedPop / 65000)) : 0} Tabur</strong>
+            <strong>{scenario ? Math.max(1, Math.floor(livePop / 65000)) : 0} Tabur</strong>
           </div>
         </div>
       </div>
