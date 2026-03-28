@@ -57,6 +57,20 @@ export default function Dashboard({
   setActiveRouteKey,
 }) {
   const [timelineHour, setTimelineHour] = useState(0);
+  const [liveOffset, setLiveOffset] = useState({ mag: 0, pop: 0, haz: 0, blk: 0 });
+
+  useEffect(() => {
+    if (!scenario) return;
+    const interval = setInterval(() => {
+      setLiveOffset({
+        mag: (Math.random() * 0.2) - 0.1, // +/- 0.1
+        pop: Math.floor((Math.random() * 2000) - 1000), // +/- 1000
+        haz: Math.random() > 0.6 ? (Math.random() > 0.5 ? 1 : -1) : 0, 
+        blk: Math.random() > 0.6 ? (Math.random() > 0.5 ? 1 : -1) : 0,
+      });
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [scenario?.id]);
 
   const routeEntries = routeData?.routes
     ? Object.entries(routeData.routes).filter(([, route]) => Boolean(route))
@@ -74,18 +88,22 @@ export default function Dashboard({
 
   const severityVal = parseFloat(scenario?.stats?.averageSeverity || 0);
   
-  // Şiddeti gerçekçi seviyeye çekiyoruz (örn. 0.9 severity için 7.6 gibi)
-  const magnitude = severityVal > 0 
-    ? (severityVal * 4.5 + 3.5).toFixed(1) 
-    : '0.0';
+  // Şiddeti gerçekçi seviyeye çekiyoruz ve canlı dalgalanma ekliyoruz
+  const baseMag = severityVal > 0 ? (severityVal * 4.5 + 3.5) : 0;
+  const magnitude = baseMag > 0 ? (baseMag + liveOffset.mag).toFixed(1) : '0.0';
 
-  // Etkilenen nüfusu, doğrudan şehrin total nüfusuna ve felaket şiddetine orantılıyoruz
-  const basePop = CITY_POPULATION[scenario?.city] || 1500000;
+  // Etkilenen nüfusu hesapla ve canlı dalgalanma ekle
+  const baseCityPop = CITY_POPULATION[scenario?.city] || 1500000;
   const impactMultiplier = severityVal * (scenario?.stats?.hazardCount || 1) * 0.08;
-  const rawAffectedPop = Math.floor(basePop * impactMultiplier);
-  const affectedPop = scenario 
-    ? rawAffectedPop.toLocaleString('tr-TR') 
-    : '0';
+  const rawAffectedPop = Math.floor(baseCityPop * impactMultiplier);
+  const livePop = rawAffectedPop > 0 ? Math.max(0, rawAffectedPop + liveOffset.pop) : 0;
+  const affectedPop = livePop > 0 ? livePop.toLocaleString('tr-TR') : '0';
+
+  const baseHaz = scenario?.stats?.hazardCount ?? 0;
+  const displayHaz = baseHaz > 0 ? Math.max(0, baseHaz + liveOffset.haz) : 0;
+
+  const baseBlk = scenario?.stats?.blockedSegments ?? 0;
+  const displayBlk = baseBlk > 0 ? Math.max(0, baseBlk + liveOffset.blk) : 0;
 
   return (
     <aside className="dashboard dashboard-grid">
@@ -100,7 +118,7 @@ export default function Dashboard({
             <div>
               <strong style={{fontSize: '0.95rem'}}>BKZS Komuta Konsolu Aktif</strong>
               <p style={{margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)'}}>
-                {scenario?.city} görev alanı • {scenario?.stats?.hazardCount || 0} aktif tehdit
+                {scenario?.city} görev alanı • {displayHaz} aktif tehdit
               </p>
             </div>
           </div>
@@ -117,9 +135,9 @@ export default function Dashboard({
         <div className="metric-grid" style={{gridTemplateColumns: 'repeat(4, 1fr)'}}>
           <div className="metric-card impact-card">
             <span>Ortalama Afet Şiddeti</span>
-            <strong style={{fontSize: '1.4rem', color: 'var(--rose)'}}>{magnitude}</strong>
+            <strong style={{fontSize: '1.4rem', color: 'var(--rose)', transition: 'color 0.3s'}}>{magnitude}</strong>
             <div className="severity-bar">
-              <div className="severity-fill" style={{width: `${Math.min(parseFloat(magnitude) * 10, 100)}%`}} />
+              <div className="severity-fill" style={{width: `${Math.min(parseFloat(magnitude) * 10, 100)}%`, transition: 'width 0.5s ease-out'}} />
             </div>
           </div>
           <div className="metric-card impact-card">
@@ -128,11 +146,11 @@ export default function Dashboard({
           </div>
           <div className="metric-card impact-card">
             <div style={{display:'flex', alignItems:'center', gap: '4px'}}><MapPin size={14} /> <span>Tehdit Noktası</span></div>
-            <strong>{scenario?.stats?.hazardCount ?? 0}</strong>
+            <strong>{displayHaz}</strong>
           </div>
           <div className="metric-card impact-card">
             <span>Kapalı Segment</span>
-            <strong style={{color: 'var(--rose)'}}>{scenario?.stats?.blockedSegments ?? 0}</strong>
+            <strong style={{color: 'var(--rose)'}}>{displayBlk}</strong>
           </div>
         </div>
       </div>
