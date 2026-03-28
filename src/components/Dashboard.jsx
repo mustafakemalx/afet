@@ -82,8 +82,9 @@ export default function Dashboard({
   // Etkilenen nüfusu, doğrudan şehrin total nüfusuna ve felaket şiddetine orantılıyoruz
   const basePop = CITY_POPULATION[scenario?.city] || 1500000;
   const impactMultiplier = severityVal * (scenario?.stats?.hazardCount || 1) * 0.08;
+  const rawAffectedPop = Math.floor(basePop * impactMultiplier);
   const affectedPop = scenario 
-    ? Math.floor(basePop * impactMultiplier).toLocaleString('tr-TR') 
+    ? rawAffectedPop.toLocaleString('tr-TR') 
     : '0';
 
   return (
@@ -275,22 +276,30 @@ export default function Dashboard({
           <Boxes size={16} />
           <span>AI Kaynak Dağıtım Asistanı</span>
         </div>
-        <div className="metric-grid compact" style={{gap: '8px', marginTop: '10px'}}>
+        <div className="metric-grid compact" style={{gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '10px'}}>
           <div className="metric-card">
-            <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Tent size={14} /> <span>Çadır İhtiyacı</span></div>
-            <strong>{(scenario?.stats?.hazardCount * 250) || 0} Adet</strong>
+            <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Tent size={14} /> <span>Çadır (Ort.)</span></div>
+            <strong>{scenario ? Math.floor(rawAffectedPop / 12).toLocaleString('tr-TR') : 0} Adet</strong>
           </div>
           <div className="metric-card">
-            <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Droplets size={14} /> <span>Su Kademesi</span></div>
-            <strong>{(scenario?.stats?.hazardCount * 12) || 0} Ton</strong>
+            <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Droplets size={14} /> <span>Su İhtiyacı</span></div>
+            <strong>{scenario ? Math.floor(rawAffectedPop / 1500).toLocaleString('tr-TR') : 0} Ton</strong>
           </div>
           <div className="metric-card">
             <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Truck size={14} /> <span>Ambulans</span></div>
-            <strong>{(scenario?.stats?.criticalCount * 12 + 5) || 0} Araç</strong>
+            <strong>{scenario ? Math.floor(rawAffectedPop / 4500).toLocaleString('tr-TR') : 0} Araç</strong>
           </div>
           <div className="metric-card">
-            <div style={{display:'flex', alignItems:'center', gap:'4px'}}><ShieldCheck size={14} /> <span>Personel</span></div>
-            <strong>{(scenario?.stats?.hazardCount * 4) || 0} Ekip</strong>
+            <div style={{display:'flex', alignItems:'center', gap:'4px'}}><Users size={14} /> <span>Personel</span></div>
+            <strong>{scenario ? Math.floor(rawAffectedPop / 800).toLocaleString('tr-TR') : 0} Ekip</strong>
+          </div>
+          <div className="metric-card">
+            <div style={{display:'flex', alignItems:'center', gap:'4px', color:'var(--rose)'}}><Activity size={14} /> <span>S. Hastane</span></div>
+            <strong>{scenario ? Math.max(2, Math.floor(rawAffectedPop / 35000)) : 0} Birim</strong>
+          </div>
+          <div className="metric-card">
+            <div style={{display:'flex', alignItems:'center', gap:'4px', color:'var(--amber)'}}><ShieldCheck size={14} /> <span>Kışla/Ordu</span></div>
+            <strong>{scenario ? Math.max(1, Math.floor(rawAffectedPop / 65000)) : 0} Tabur</strong>
           </div>
         </div>
       </div>
