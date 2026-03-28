@@ -1514,3 +1514,167 @@ body.light-theme .select-input option {
 body.light-theme .select-input option:checked {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(14, 165, 233, 0.1));
 }
+
+/* Kılavuz Modal CSS */
+.guide-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(4, 11, 22, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.guide-modal-content {
+  width: 90%;
+  max-width: 650px;
+  max-height: 85vh;
+  background: rgba(10, 25, 41, 0.85);
+  border: 1px solid rgba(81, 215, 255, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 15, 26, 0.6);
+}
+
+.guide-header h2 {
+  display: flex;
+  align-items: center;
+  color: var(--cyan);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.close-guide {
+  background: transparent;
+  border: none;
+  color: #8ea6bb;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-guide:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.guide-body {
+  padding: 24px;
+  overflow-y: auto;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.guide-body::-webkit-scrollbar {
+  width: 6px;
+}
+.guide-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.guide-body::-webkit-scrollbar-thumb {
+  background: rgba(81, 215, 255, 0.2);
+  border-radius: 10px;
+}
+.guide-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(81, 215, 255, 0.4);
+}
+
+.guide-body section {
+  margin-bottom: 24px;
+}
+
+.guide-body h3 {
+  color: white;
+  margin: 0 0 12px 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.guide-body p {
+  margin: 0 0 12px 0;
+}
+
+.guide-body ul {
+  padding-left: 20px;
+  margin: 0 0 12px 0;
+}
+
+.guide-body li {
+  margin-bottom: 8px;
+}
+
+.guide-body hr {
+  border: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 24px 0;
+}
+
+.guide-footer {
+  text-align: center;
+  padding-top: 12px;
+  color: #5d7287;
+  font-size: 0.85rem;
+}
+
+body.light-theme .guide-modal-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .guide-header {
+  background: rgba(241, 245, 249, 0.8);
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .guide-header h2 {
+  color: #0f172a;
+}
+
+body.light-theme .close-guide {
+  color: #64748b;
+}
+
+body.light-theme .close-guide:hover {
+  background: rgba(15, 23, 42, 0.05);
+  color: #0f172a;
+}
+
+body.light-theme .guide-body {
+  color: #334155;
+}
+
+body.light-theme .guide-body h3 {
+  color: #0f172a;
+}
+
+body.light-theme .guide-body hr {
+  background: rgba(15, 23, 42, 0.08);
+}

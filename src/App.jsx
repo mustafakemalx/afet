@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { AlertTriangle, Orbit, Radar, WifiOff, Bell, BellRing, Info, CheckCircle, X, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertTriangle, Orbit, Radar, WifiOff, Bell, BellRing, Info, CheckCircle, X, RefreshCw, Trash2, BookOpen } from 'lucide-react';
 import MapComponent from './components/MapComponent';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -28,6 +28,7 @@ function App() {
   const [isOffline, setIsOffline] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   const addNotification = (msg, type = 'info') => {
     const id = Date.now() + Math.random();
@@ -216,6 +217,9 @@ function App() {
       />
 
       <div className="notif-fixed-wrapper">
+        <button className="notif-bell" onClick={() => setIsGuideOpen(true)} title="Kullanım Kılavuzu">
+           <BookOpen size={20} />
+        </button>
         <button className="notif-bell" onClick={handleRefresh} disabled={isRouting} title="Verileri Güncelle">
            <RefreshCw size={20} className={isRouting ? 'spin' : ''} />
         </button>
@@ -247,6 +251,60 @@ function App() {
           </div>
         )}
       </div>
+
+      {isGuideOpen && (
+        <div className="guide-modal-overlay" onClick={() => setIsGuideOpen(false)}>
+          <div className="guide-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="guide-header">
+              <h2><BookOpen size={22} style={{ marginRight: '8px' }}/> BKZS Kullanım Kılavuzu</h2>
+              <button className="close-guide" onClick={() => setIsGuideOpen(false)}><X size={24} /></button>
+            </div>
+            <div className="guide-body">
+              <section>
+                <h3>1. Sistemin Amacı ve Hedefi</h3>
+                <p><strong>BKZS (Bilgi ve Kriz Yönetimi Sistemi)</strong>, afet alanlarında sahadan gelen anlık uydu verileri ve sensör bildirimlerini işleyerek <strong>yapay zeka (AI) güdümlü güvenli kargo/kurtarma rotaları</strong> çizen proaktif bir komuta ekranıdır.</p>
+              </section>
+
+              <hr />
+
+              <section>
+                <h3>2. Harita Göstergeleri</h3>
+                <ul>
+                  <li><strong style={{color: '#ef4444'}}>Kırmızı Çemberler:</strong> Uydu analizinden veya sahadan bildirilen <em>Enkaz Alanı / Yapısal Çökme</em> bölgelerini temsil eder. Araçlar bu bölgelere girmemelidir.</li>
+                  <li><strong style={{color: '#22c55e'}}>Yeşil Parçalı Çizgi:</strong> <strong>A* Navigasyon Algoritması</strong> ile çizilen "En Güvenli Rota". Enkazın haritası çıkarıldıkça anlık olarak yolunu değiştirir.</li>
+                  <li><strong style={{color: '#f59e0b'}}>Turuncu / Mavi İkonlar:</strong> Sırasıyla toplanma alanları ve komuta/lojistik üslerini temsil eder. Ulaşım buralar arasında sağlanır.</li>
+                </ul>
+              </section>
+
+              <hr />
+
+              <section>
+                <h3>3. Canlı Sensörler ve Raporlama</h3>
+                <p>Sistem, anlık olarak <strong>Open-Meteo Weather API</strong> kullanarak görev alanının canlı meteorolojik verilerini sağlar. Paneldeki "Risk & Meteoroloji" sekmesinde saniyede rüzgar hızı (km/sa), nem ve sıcaklık oynamalarını <em>canlı sarsıntı/sensör</em> verisi gibi hissedebilirsiniz. Bu, olası çadır kent alanlarının şartlarının bilinmesi için hayatidir.</p>
+                <p>Zaman ilerledikçe, Afet sekmesindeki "Ortalama Etkilenen Nüfus" sayısının zamanla nasıl yavaş yavaş raporlanıp yükseldiğini görebilirsiniz.</p>
+              </section>
+
+              <hr />
+
+              <section>
+                <h3>4. Yapay Zeka (AI) Kaynak Optimizasyonu</h3>
+                <p>Uygulamamızın sol tarafındaki <strong>Akıllı Dağıtım Analizi</strong>, tamamen etkilenen canlı nüfusa oranla optimize edilmektedir. Nüfus dinamik olarak arttıkça; sistemin ihtiyaç duyduğu çadır, içme suyu, personel, ambulans ve ağır iş makinesi sayıları <strong>dünya standartlarına (WHO / SPHERE) göre</strong> otomatik olarak milisaniyeler içinde tekrar hesaplanır ve güncellenir.</p>
+              </section>
+
+              <hr />
+
+              <section>
+                <h3>5. Offline / Mesh Ağı Modu</h3>
+                <p>İletişim altyapısının çökmesi durumunda sol alttan aktifleştirilen "Offline Mod", uygulamanın yerel bellekteki en son başarılı haritalandırmaları üzerinden çalışmasını sağlar. Yeni veri gelmese bile sahadaki araç ilerlemeye devam edebilir.</p>
+              </section>
+
+              <div className="guide-footer">
+                <p><em>Afet yönetiminde her saniye önemlidir.</em></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="workspace">
         <section className="mission-strip">
