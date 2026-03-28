@@ -161,7 +161,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
             } else if (status === window.google.maps.DirectionsStatus.ZERO_RESULTS && waypointCount > 0) {
               // Google couldn't find a path matching exactly our mathematical grid waypoints. Retry with fewer/no waypoints.
               console.warn(`Waypoints too strict for ${routeKey}, retrying with fewer points...`);
-              tryFetchRoute(waypointCount === 12 ? 3 : 0);
+              tryFetchRoute(waypointCount === 3 ? 1 : 0);
             } else if (status === window.google.maps.DirectionsStatus.REQUEST_DENIED) {
               console.error('Google Maps Directions API is NOT enabled! Please enable it in Google Cloud Console.');
               alert('DİKKAT: Google Maps "Directions API" hesabınızda kapalı! Yolları takip eden navigasyon çizgisi için Google Cloud paneline girip "Directions API" yi aktifleştirmeniz gerekmektedir.');
@@ -172,7 +172,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         );
       };
 
-      tryFetchRoute(12); // First try with 12 waypoints to strictly follow our safe algorithm
+      tryFetchRoute(3); // First try with just 3 waypoints so it avoids hazards but doesn't get confused by minor grid points
     });
   }, [routeData, directionsCache, isLoaded]);
 
