@@ -51,6 +51,14 @@ body.light-theme .scenario-card.is-selected {
   border-color: rgba(15, 101, 160, 0.28);
 }
 
+body.light-theme .toggle-chip.is-active {
+  background: #ffffff;
+  border-color: rgba(15, 101, 160, 0.5);
+  color: #0c4d7e;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(15, 101, 160, 0.15);
+}
+
 * {
   box-sizing: border-box;
 }
