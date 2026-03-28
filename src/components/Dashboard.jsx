@@ -116,14 +116,14 @@ export default function Dashboard({
         </div>
         <div className="metric-grid" style={{gridTemplateColumns: 'repeat(4, 1fr)'}}>
           <div className="metric-card impact-card">
-            <span>Deprem Şiddeti</span>
+            <span>Ortalama Afet Şiddeti</span>
             <strong style={{fontSize: '1.4rem', color: 'var(--rose)'}}>{magnitude}</strong>
             <div className="severity-bar">
               <div className="severity-fill" style={{width: `${Math.min(parseFloat(magnitude) * 10, 100)}%`}} />
             </div>
           </div>
           <div className="metric-card impact-card">
-            <div style={{display:'flex', alignItems:'center', gap: '4px'}}><Users size={14} /> <span>Etkilenen Nüfus</span></div>
+            <div style={{display:'flex', alignItems:'center', gap: '4px'}}><Users size={14} /> <span>Ort. Etkilenen Nüfus</span></div>
             <strong style={{color: 'var(--amber)'}}>{affectedPop}</strong>
           </div>
           <div className="metric-card impact-card">
