@@ -63,7 +63,7 @@ export default function Dashboard({
     if (!scenario) return;
     
     // Şehir değiştiğinde offset'i sıfırlıyoruz ki saçma farklar oluşmasın
-    setLiveOffset({ mag: 0, pop: 0, haz: 0, blk: 0 });
+    setLiveOffset({ mag: 0, pop: 0, haz: 0, blk: 0, temp: 0, humid: 0, wind: 0 });
 
     const interval = setInterval(() => {
       setLiveOffset(prev => ({
@@ -77,6 +77,11 @@ export default function Dashboard({
         // Kapalı yol veya tespit edilen tehlikeler çok nadir güncellenir
         haz: prev.haz + (Math.random() > 0.98 ? 1 : 0), 
         blk: prev.blk + (Math.random() > 0.98 ? 1 : 0),
+        
+        // Meteoroloji istasyonu canlı sensör simülasyonu (birikimsiz/driftsiz sabit radyo oynamaları)
+        temp: (Math.random() * 0.4 - 0.2), // ±0.2 oynama
+        humid: Math.floor(Math.random() * 3) - 1, // ±1 birim
+        wind: (Math.random() * 1.6 - 0.8), // ±0.8 oynama
       }));
     }, 3000);
     
@@ -215,15 +220,15 @@ export default function Dashboard({
 
         <div className="weather-strip">
           <div>
-            <span>🌡️ {scenario?.weather?.temperatureC ?? 0}°C</span>
+            <span style={{ transition: 'color 0.3s' }}>🌡️ {(((scenario?.weather?.temperatureC ?? 0) + (liveOffset.temp || 0))).toFixed(1)}°C</span>
           </div>
           <div>
             <Waves size={15} />
-            <span>{scenario?.weather?.humidity ?? 0}% nem</span>
+            <span style={{ transition: 'color 0.3s' }}>{Math.max(0, Math.round((scenario?.weather?.humidity ?? 0) + (liveOffset.humid || 0)))}% nem</span>
           </div>
           <div>
             <Wind size={15} />
-            <span>{scenario?.weather?.windKmh ?? 0} km/sa</span>
+            <span style={{ transition: 'color 0.3s' }}>{Math.max(0, (scenario?.weather?.windKmh ?? 0) + (liveOffset.wind || 0)).toFixed(1)} km/sa</span>
           </div>
           <div>
             <span>👁 {scenario?.weather?.visibilityKm ?? 0} km</span>
