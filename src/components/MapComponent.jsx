@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, Polyline, Circle, Marker, InfoWindow, Rectangle } from '@react-google-maps/api';
 
-const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+// API anahtarını doğrudan yazıyoruz (test amaçlı)
+const GOOGLE_MAPS_KEY = 'AIzaSyAalgHoNB06A4G40NJZEjJWWrthTWjQ08s';
 
 const ROUTE_STYLES = {
   safest: { strokeColor: '#22c55e', strokeWeight: 7, strokeOpacity: 0.95 },
