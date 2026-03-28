@@ -65,12 +65,25 @@ export default function Dashboard({
   const hazardEntries = Object.entries(scenario?.stats?.countsByType || {});
   const currentTimeline = TIMELINE_DATA.reduce((prev, curr) => curr.hour <= timelineHour ? curr : prev, TIMELINE_DATA[0]);
 
-  const magnitude = scenario?.stats?.averageSeverity 
-    ? (parseFloat(scenario.stats.averageSeverity) * 10).toFixed(1) 
+  const CITY_POPULATION = {
+    'Hatay': 1686000,
+    'İzmir': 4462000,
+    'İstanbul': 15655000,
+    'Trabzon': 818000,
+  };
+
+  const severityVal = parseFloat(scenario?.stats?.averageSeverity || 0);
+  
+  // Şiddeti gerçekçi seviyeye çekiyoruz (örn. 0.9 severity için 7.6 gibi)
+  const magnitude = severityVal > 0 
+    ? (severityVal * 4.5 + 3.5).toFixed(1) 
     : '0.0';
 
-  const affectedPop = scenario?.stats?.hazardCount 
-    ? (scenario.stats.hazardCount * 18500).toLocaleString('tr-TR') 
+  // Etkilenen nüfusu, doğrudan şehrin total nüfusuna ve felaket şiddetine orantılıyoruz
+  const basePop = CITY_POPULATION[scenario?.city] || 1500000;
+  const impactMultiplier = severityVal * (scenario?.stats?.hazardCount || 1) * 0.08;
+  const affectedPop = scenario 
+    ? Math.floor(basePop * impactMultiplier).toLocaleString('tr-TR') 
     : '0';
 
   return (
