@@ -132,39 +132,49 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
       const path = route.path;
       const origin = toLatLng(path[0]);
       const destination = toLatLng(path[path.length - 1]);
-      
-      // Select intermediate points to force the route to avoid hazards properly
       const pts = path.slice(1, -1);
-      const MAX_WAYPOINTS = 12; // Strict limit to not exceed API limits
-      let waypoints = [];
-      if (pts.length > 0) {
-        const step = pts.length / (MAX_WAYPOINTS + 1);
-        for (let i = 1; i <= MAX_WAYPOINTS; i++) {
+
+      // We wrap the request in a function to let us retry with fewer waypoints if Google fails to find a path
+      const tryFetchRoute = (waypointCount) => {
+        let waypoints = [];
+        if (pts.length > 0 && waypointCount > 0) {
+          const step = pts.length / (waypointCount + 1);
+          for (let i = 1; i <= waypointCount; i++) {
             const pt = pts[Math.floor(i * step)];
             if (pt) waypoints.push({ location: toLatLng(pt), stopover: false });
-        }
-      }
-
-      ds.route(
-        {
-          origin,
-          destination,
-          waypoints,
-          travelMode: window.google.maps.TravelMode.DRIVING,
-        },
-        (result, status) => {
-          if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirectionsCache((prev) => ({
-              ...prev,
-              [routeKey]: { result, originalPath: route.path }
-            }));
-          } else {
-            console.warn(`Directions request failed for ${routeKey}:`, status);
           }
         }
-      );
+
+        ds.route(
+          {
+            origin,
+            destination,
+            waypoints,
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          },
+          (result, status) => {
+            if (status === window.google.maps.DirectionsStatus.OK) {
+              setDirectionsCache((prev) => ({
+                ...prev,
+                [routeKey]: { result, originalPath: route.path }
+              }));
+            } else if (status === window.google.maps.DirectionsStatus.ZERO_RESULTS && waypointCount > 0) {
+              // Google couldn't find a path matching exactly our mathematical grid waypoints. Retry with fewer/no waypoints.
+              console.warn(`Waypoints too strict for ${routeKey}, retrying with fewer points...`);
+              tryFetchRoute(waypointCount === 12 ? 3 : 0);
+            } else if (status === window.google.maps.DirectionsStatus.REQUEST_DENIED) {
+              console.error('Google Maps Directions API is NOT enabled! Please enable it in Google Cloud Console.');
+              alert('DİKKAT: Google Maps "Directions API" hesabınızda kapalı! Yolları takip eden navigasyon çizgisi için Google Cloud paneline girip "Directions API" yi aktifleştirmeniz gerekmektedir.');
+            } else {
+              console.warn(`Directions request completely failed for ${routeKey}:`, status);
+            }
+          }
+        );
+      };
+
+      tryFetchRoute(12); // First try with 12 waypoints to strictly follow our safe algorithm
     });
-  }, [routeData, directionsCache]);
+  }, [routeData, directionsCache, isLoaded]);
 
   // Dispatch animation preparation
   useEffect(() => {
