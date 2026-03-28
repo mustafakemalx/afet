@@ -118,7 +118,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
 
   // Directions API implementation - Snap coordinates to real streets
   useEffect(() => {
-    if (!routeData?.routes || !window.google?.maps) return;
+    if (!isLoaded || !routeData?.routes || !window.google?.maps?.DirectionsService) return;
 
     const ds = new window.google.maps.DirectionsService();
 
