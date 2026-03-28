@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, Polyline, Circle, Marker, InfoWindow, Rectangle } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Polyline, Circle, Marker, InfoWindow, Rectangle, DirectionsRenderer } from '@react-google-maps/api';
 
 // API anahtarını doğrudan yazıyoruz (test amaçlı)
 const GOOGLE_MAPS_KEY = 'AIzaSyAalgHoNB06A4G40NJZEjJWWrthTWjQ08s';
@@ -85,6 +85,8 @@ function toLatLngPath(path) {
 export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [activeInfoWindow, setActiveInfoWindow] = useState(null);
+  const [directionsCache, setDirectionsCache] = useState({});
+  const [animPath, setAnimPath] = useState([]);
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
@@ -114,23 +116,90 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
     }
   }, [scenario]);
 
-  // Dispatch animation
+  // Directions API implementation - Snap coordinates to real streets
   useEffect(() => {
-    if (!dispatchActive || !activeRoute?.path?.length) return undefined;
+    if (!routeData?.routes || !window.google?.maps) return;
+
+    const ds = new window.google.maps.DirectionsService();
+
+    Object.entries(routeData.routes).forEach(([routeKey, route]) => {
+      if (!route || !route.path || route.path.length < 2) return;
+
+      if (directionsCache[routeKey] && directionsCache[routeKey].originalPath === route.path) {
+        return; // Already calculated
+      }
+
+      const path = route.path;
+      const origin = toLatLng(path[0]);
+      const destination = toLatLng(path[path.length - 1]);
+      
+      // Select intermediate points to force the route to avoid hazards properly
+      const pts = path.slice(1, -1);
+      const MAX_WAYPOINTS = 12; // Strict limit to not exceed API limits
+      let waypoints = [];
+      if (pts.length > 0) {
+        const step = pts.length / (MAX_WAYPOINTS + 1);
+        for (let i = 1; i <= MAX_WAYPOINTS; i++) {
+            const pt = pts[Math.floor(i * step)];
+            if (pt) waypoints.push({ location: toLatLng(pt), stopover: false });
+        }
+      }
+
+      ds.route(
+        {
+          origin,
+          destination,
+          waypoints,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK) {
+            setDirectionsCache((prev) => ({
+              ...prev,
+              [routeKey]: { result, originalPath: route.path }
+            }));
+          } else {
+            console.warn(`Directions request failed for ${routeKey}:`, status);
+          }
+        }
+      );
+    });
+  }, [routeData, directionsCache]);
+
+  // Dispatch animation preparation
+  useEffect(() => {
+    if (!dispatchActive || !activeRouteKey) {
+      setAnimPath([]);
+      return;
+    }
+    const cached = directionsCache[activeRouteKey];
+    if (cached) {
+      // Directions API returning a beautiful overview path with many small points
+      setAnimPath(cached.result.routes[0].overview_path);
+    } else if (activeRoute?.path) {
+      // Fallback grid path
+      setAnimPath(toLatLngPath(activeRoute.path));
+    } else {
+      setAnimPath([]);
+    }
+  }, [dispatchActive, activeRouteKey, directionsCache, activeRoute]);
+
+  useEffect(() => {
+    if (!animPath || animPath.length === 0) return undefined;
 
     let index = 0;
     setDispatchIndex(0);
     const interval = window.setInterval(() => {
-      if (index >= activeRoute.path.length - 1) {
+      if (index >= animPath.length - 1) {
         window.clearInterval(interval);
         return;
       }
       index += 1;
       setDispatchIndex(index);
-    }, 420);
+    }, 150); // Speed optimized for road curve smoothing
 
     return () => window.clearInterval(interval);
-  }, [dispatchActive, activeRoute]);
+  }, [animPath]);
 
   if (!isLoaded) {
     return (
@@ -262,9 +331,31 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
             .map(([routeKey, route]) => {
               const style = ROUTE_STYLES[routeKey] || ROUTE_STYLES.balanced;
               const isActive = routeKey === activeRouteKey;
+              const cached = directionsCache[routeKey];
+
+              if (cached) {
+                return (
+                  <DirectionsRenderer
+                    key={`directions-${routeKey}`}
+                    directions={cached.result}
+                    options={{
+                      polylineOptions: {
+                        strokeColor: style.strokeColor,
+                        strokeWeight: isActive ? style.strokeWeight + 1 : Math.max(2, style.strokeWeight - 2),
+                        strokeOpacity: isActive ? style.strokeOpacity : 0.28,
+                        zIndex: isActive ? 10 : 1,
+                      },
+                      suppressMarkers: true,
+                      preserveViewport: true,
+                    }}
+                  />
+                );
+              }
+
+              // Fallback to straight lines while fetching
               return (
                 <Polyline
-                  key={routeKey}
+                  key={`poly-${routeKey}`}
                   path={toLatLngPath(route.path)}
                   options={{
                     strokeColor: style.strokeColor,
@@ -296,9 +387,9 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         ))}
 
         {/* Dispatch unit */}
-        {dispatchActive && activeRoute?.path?.[dispatchIndex] && (
+        {dispatchActive && animPath[dispatchIndex] && (
           <Marker
-            position={toLatLng(activeRoute.path[dispatchIndex])}
+            position={animPath[dispatchIndex]}
             icon={dispatchMarkerIcon}
             zIndex={100}
           />
