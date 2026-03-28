@@ -17,6 +17,7 @@ const ROLE_COLORS = {
   hospital: '#22c55e',
   shelter: '#f59e0b',
   target: '#ef4444',
+  military: '#0f766e',
 };
 
 const ROLE_LABELS = {
@@ -25,6 +26,7 @@ const ROLE_LABELS = {
   hospital: 'Hastane',
   shelter: 'Toplanma',
   target: 'Hedef',
+  military: 'Kışla/Askeri B.',
 };
 
 const MAP_STYLES_DARK = [
