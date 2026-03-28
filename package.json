@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "node api/index.js",
+    "dev:web": "vite --host 0.0.0.0 --port 5173",
+    "dev:all": "node scripts/dev-all.cjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
