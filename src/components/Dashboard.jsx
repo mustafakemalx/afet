@@ -61,14 +61,25 @@ export default function Dashboard({
 
   useEffect(() => {
     if (!scenario) return;
+    
+    // Şehir değiştiğinde offset'i sıfırlıyoruz ki saçma farklar oluşmasın
+    setLiveOffset({ mag: 0, pop: 0, haz: 0, blk: 0 });
+
     const interval = setInterval(() => {
-      setLiveOffset({
-        mag: (Math.random() * 0.2) - 0.1, // +/- 0.1
-        pop: Math.floor((Math.random() * 2000) - 1000), // +/- 1000
-        haz: Math.random() > 0.6 ? (Math.random() > 0.5 ? 1 : -1) : 0, 
-        blk: Math.random() > 0.6 ? (Math.random() > 0.5 ? 1 : -1) : 0,
-      });
-    }, 2500);
+      setLiveOffset(prev => ({
+        // Şiddet değeri sabittir, revizyonlar çok nadir olur (burada sabit bırakıyoruz)
+        mag: prev.mag,
+        
+        // Etkilenen nüfus zamanla yavaşça artar (yeni hasar tespitleri vb.)
+        // Her 3 saniyede 0 ila 4 kişi ekleniyor (saatte ~2400 kişi)
+        pop: prev.pop + Math.floor(Math.random() * 5), 
+        
+        // Kapalı yol veya tespit edilen tehlikeler çok nadir güncellenir
+        haz: prev.haz + (Math.random() > 0.98 ? 1 : 0), 
+        blk: prev.blk + (Math.random() > 0.98 ? 1 : 0),
+      }));
+    }, 3000);
+    
     return () => clearInterval(interval);
   }, [scenario?.id]);
 
@@ -88,11 +99,15 @@ export default function Dashboard({
 
   const severityVal = parseFloat(scenario?.stats?.averageSeverity || 0);
   
-  // Şiddeti gerçekçi seviyeye çekiyoruz ve canlı dalgalanma ekliyoruz
-  const baseMag = severityVal > 0 ? (severityVal * 4.5 + 3.5) : 0;
-  const magnitude = baseMag > 0 ? (baseMag + liveOffset.mag).toFixed(1) : '0.0';
+  // Şiddeti gerçekçi seviyeye çekiyoruz (Depremler 5.7 ile 8 arasında kalsın istendi)
+  // severityVal aralığı: Trabzon (~0.45) - Hatay (~0.9)
+  // Bunu 5.7 - 8.0 aralığına oturtmak için: val * 3.5 + 4.5 kullanıyoruz:
+  const baseMag = severityVal > 0 ? (severityVal * 3.5 + 4.5) : 0;
+  // 5.7 ile 8.0 arası kesilecek şekilde clamp:
+  const clampedMag = Math.max(5.7, Math.min(8.0, baseMag));
+  const magnitude = clampedMag > 0 ? (clampedMag + liveOffset.mag).toFixed(1) : '0.0';
 
-  // Etkilenen nüfusu hesapla ve canlı dalgalanma ekle
+  // Etkilenen nüfusu hesapla ve canlı artış ekle
   const baseCityPop = CITY_POPULATION[scenario?.city] || 1500000;
   const impactMultiplier = severityVal * (scenario?.stats?.hazardCount || 1) * 0.08;
   const rawAffectedPop = Math.floor(baseCityPop * impactMultiplier);
