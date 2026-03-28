@@ -263,24 +263,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           />
         )}
 
-        {/* Safe corridors */}
-        {scenario?.safeCorridors?.map((corridor) => (
-          <Polyline
-            key={corridor.id}
-            path={toLatLngPath(corridor.path)}
-            options={{
-              strokeColor: '#34d399',
-              strokeWeight: 3,
-              strokeOpacity: 0.85,
-              strokeDashArray: [10, 10],
-              icons: [{
-                icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.85, strokeColor: '#34d399', scale: 3 },
-                offset: '0',
-                repeat: '20px',
-              }],
-            }}
-          />
-        ))}
+        {/* Safe corridors kapatıldı */}
 
         {/* Hazard circles */}
         {scenario?.hazards?.map((hazard) => (
