@@ -1417,3 +1417,92 @@ body.light-theme .map-legend {
   border-color: rgba(52, 211, 153, 0.6);
   background: rgba(52, 211, 153, 0.2);
 }
+
+/* ── Premium Dropdown Select ── */
+.field-label {
+  display: block;
+  margin: 10px 0 6px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.select-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238ea6bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.select-input:hover {
+  border-color: rgba(81, 215, 255, 0.35);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.select-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(81, 215, 255, 0.15), 0 0 20px rgba(81, 215, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.select-input option {
+  background: #0c1e2e;
+  color: var(--text-main);
+  padding: 10px;
+  font-size: 0.88rem;
+}
+
+.select-input option:checked {
+  background: linear-gradient(135deg, rgba(81, 215, 255, 0.3), rgba(81, 215, 255, 0.15));
+  color: #ffffff;
+}
+
+.select-input option:disabled {
+  color: #4a6478;
+  background: #081620;
+}
+
+body.light-theme .select-input {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(15, 23, 42, 0.12);
+  color: var(--text-main);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235d7287' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+}
+
+body.light-theme .select-input:hover {
+  border-color: rgba(14, 165, 233, 0.4);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+body.light-theme .select-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+body.light-theme .select-input option {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+body.light-theme .select-input option:checked {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(14, 165, 233, 0.1));
+}
