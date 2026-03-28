@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AlertTriangle, Orbit, Radar, WifiOff, Bell, BellRing, Info, CheckCircle, X, RefreshCw, Trash2 } from 'lucide-react';
 import MapComponent from './components/MapComponent';
@@ -52,9 +52,9 @@ function App() {
     const next = !isOffline;
     setIsOffline(next);
     if (next) {
-      addNotification('Mesh Ağı Aktif (Offline Mod). Veriler önbellekten okunuyor.', 'danger');
+      addNotification('Mesh AÄŸÄ± Aktif (Offline Mod). Veriler Ã¶nbellekten okunuyor.', 'danger');
     } else {
-      addNotification('Uydu ve İnternet bağlantısı sağlandı. Online mod devrede.', 'success');
+      addNotification('Uydu ve Ä°nternet baÄŸlantÄ±sÄ± saÄŸlandÄ±. Online mod devrede.', 'success');
     }
   };
 
@@ -82,10 +82,10 @@ function App() {
         }
       } catch (error) {
         console.error('Failed to load scenarios', error);
-        setStatusText('Senaryo verisi yüklenemedi');
+        addNotification('Senaryo verisi yuklenemedi. API servisini kontrol et.', 'danger');
       } finally {
         setLoading(false);
-        addNotification('BKZS Komuta Konsolu Başlatıldı.', 'success');
+        addNotification('BKZS Komuta Konsolu BaÅŸlatÄ±ldÄ±.', 'success');
       }
     };
 
@@ -108,9 +108,9 @@ function App() {
 
     if (withScanAnimation) {
       setScanPulse(true);
-      addNotification('Yerli uydu taraması ve rota yeniden hesaplanıyor...', 'info');
+      addNotification('Yerli uydu taramasÄ± ve rota yeniden hesaplanÄ±yor...', 'info');
     } else {
-      addNotification('Güvenli rota yeniden oluşturuluyor...', 'info');
+      addNotification('GÃ¼venli rota yeniden oluÅŸturuluyor...', 'info');
     }
 
     try {
@@ -124,13 +124,13 @@ function App() {
       setRouteData(response.data);
       setSelectedScenario(response.data.scenario);
       setActiveRouteKey(response.data.analysis?.recommendedMode || 'safest');
-      addNotification('Görev koridoru hazır. En güvenli rota aktif.', 'success');
+      addNotification('GÃ¶rev koridoru hazÄ±r. En gÃ¼venli rota aktif.', 'success');
       if (response.data.scenario.stats.criticalCount >= 2) {
-         setTimeout(() => addNotification(`${response.data.scenario.city} görev alanında kritik bulgular var!`, 'danger'), 800);
+         setTimeout(() => addNotification(`${response.data.scenario.city} gÃ¶rev alanÄ±nda kritik bulgular var!`, 'danger'), 800);
       }
     } catch (error) {
       console.error('Route request failed', error);
-      addNotification('Rota hesaplanamadı veya AFAD sunucusuna ulaşılamadı.', 'danger');
+      addNotification('Rota hesaplanamadÄ± veya AFAD sunucusuna ulaÅŸÄ±lamadÄ±.', 'danger');
     } finally {
       setIsRouting(false);
       window.setTimeout(() => setScanPulse(false), 900);
@@ -150,7 +150,7 @@ function App() {
     setSelectedStartSiteId(nextStart);
     setSelectedEndSiteId(nextEnd);
     setRouteData(null);
-    addNotification(`${scenario.city} görev alanı yükleniyor...`, 'neutral');
+    addNotification(`${scenario.city} gÃ¶rev alanÄ± yÃ¼kleniyor...`, 'neutral');
     fetchRoute(scenario, nextStart, nextEnd, true);
   };
 
@@ -165,14 +165,14 @@ function App() {
   const handleStartChange = (siteId) => {
     setSelectedStartSiteId(siteId);
     const siteLabel = getSite(selectedScenario, siteId)?.label;
-    addNotification(`Çıkış noktası ${siteLabel} olarak güncellendi.`, 'neutral');
+    addNotification(`Ã‡Ä±kÄ±ÅŸ noktasÄ± ${siteLabel} olarak gÃ¼ncellendi.`, 'neutral');
     handleRouteUpdate(siteId, selectedEndSiteId);
   };
 
   const handleEndChange = (siteId) => {
     setSelectedEndSiteId(siteId);
     const siteLabel = getSite(selectedScenario, siteId)?.label;
-    addNotification(`Varış hedefi ${siteLabel} olarak güncellendi.`, 'neutral');
+    addNotification(`VarÄ±ÅŸ hedefi ${siteLabel} olarak gÃ¼ncellendi.`, 'neutral');
     handleRouteUpdate(selectedStartSiteId, siteId);
   };
 
@@ -183,7 +183,7 @@ function App() {
           <Orbit size={42} />
         </div>
         <h1>BKZS Mission Console</h1>
-        <p>Uydu tarama, risk birleştirme ve güvenli koridor motoru başlatılıyor.</p>
+        <p>Uydu tarama, risk birleÅŸtirme ve gÃ¼venli koridor motoru baÅŸlatÄ±lÄ±yor.</p>
       </div>
     );
   }
@@ -216,7 +216,7 @@ function App() {
       />
 
       <div className="notif-fixed-wrapper">
-        <button className="notif-bell" onClick={handleRefresh} disabled={isRouting} title="Verileri Güncelle">
+        <button className="notif-bell" onClick={handleRefresh} disabled={isRouting} title="Verileri GÃ¼ncelle">
            <RefreshCw size={20} className={isRouting ? 'spin' : ''} />
         </button>
         <div className="notif-bell" onClick={() => setIsNotifOpen(!isNotifOpen)}>
@@ -226,12 +226,12 @@ function App() {
         {isNotifOpen && (
           <div className="notif-dropdown">
             <div className="notif-header">
-              <span>Bildirim Geçmişi</span>
+              <span>Bildirim GeÃ§miÅŸi</span>
               <X size={18} style={{cursor:'pointer'}} onClick={() => setIsNotifOpen(false)} />
             </div>
             <div className="notif-body">
               {notifications.length === 0 ? (
-                <div className="empty-notif">Henüz bildirim yok.</div>
+                <div className="empty-notif">HenÃ¼z bildirim yok.</div>
               ) : (
                 notifications.map(n => (
                   <div key={n.id} className={`notif-item type-${n.type}`}>
@@ -251,7 +251,7 @@ function App() {
       <main className="workspace">
         <section className="mission-strip">
           <div>
-            <p className="eyebrow">Afet Yönetiminde Yerli Uydu Verisi Entegrasyonu</p>
+            <p className="eyebrow">Afet YÃ¶netiminde Yerli Uydu Verisi Entegrasyonu</p>
             <h1>{selectedScenario?.name}</h1>
             <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
           </div>
@@ -290,3 +290,4 @@ function App() {
 }
 
 export default App;
+
