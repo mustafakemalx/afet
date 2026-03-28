@@ -141,7 +141,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           const step = Math.max(1, Math.floor(pts.length / (waypointCount + 1)));
           for (let i = 1; i <= waypointCount; i++) {
             const pt = pts[i * step];
-            if (pt) waypoints.push({ location: toLatLng(pt) }); // 'stopover: true' varsayılan, optimizeWaypoints bununla iyi çalışır
+            if (pt) waypoints.push({ location: toLatLng(pt), stopover: false }); // 'stopover: false' means "via point", pass through without strictly breaking the route into legs
           }
         }
 
@@ -150,8 +150,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
             origin,
             destination,
             waypoints,
-            optimizeWaypoints: true, // Google'ın Yapay Zekasına noktalar arasında en mantıklı (U dönüşsüz) sırayı bulmasını söyler
-            travelMode: window.google.maps.TravelMode.DRIVING, // Yalnızca Araç
+            travelMode: window.google.maps.TravelMode.DRIVING,
           },
           (result, status) => {
             if (status === window.google.maps.DirectionsStatus.OK) {
@@ -172,7 +171,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         );
       };
 
-      tryFetchRoute(2); // Sadece hedefe yakın ve başlangıca yakın 2 ana kırılma noktası vererek haritayı temiz tutarız
+      tryFetchRoute(1); // Sadece 1 (TAM ORTA) noktayı vererek Google'ın ana yollardan sapmasını maksimum engelliyoruz
     });
   }, [routeData, directionsCache, isLoaded]);
 
