@@ -55,7 +55,7 @@ export default function Sidebar({
           <div className="brand-row">
             <Activity size={28} />
             <div>
-              <p className="eyebrow">BKZS destekli</p>
+              <p className="eyebrow">Quicpass destekli</p>
               <h2>Mission Console</h2>
             </div>
           </div>

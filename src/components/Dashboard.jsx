@@ -136,7 +136,7 @@ export default function Dashboard({
               <Activity size={18} />
             </div>
             <div>
-              <strong style={{fontSize: '0.95rem'}}>BKZS Komuta Konsolu Aktif</strong>
+              <strong style={{fontSize: '0.95rem'}}>Quicpass Komuta Konsolu Aktif</strong>
               <p style={{margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)'}}>
                 {scenario?.city} görev alanı • {displayHaz} aktif tehdit
               </p>
@@ -366,7 +366,7 @@ export default function Dashboard({
       <div className="panel floating-panel dashboard-card" style={{gridColumn: '1 / -1'}}>
         <div className="section-title">
           <Satellite size={16} />
-          <span>BKZS zaman penceresi</span>
+          <span>Quicpass zaman penceresi</span>
         </div>
 
         <div className="compact-timeline-list timeline-stat-grid" style={{gridTemplateColumns: 'repeat(3, 1fr)'}}>

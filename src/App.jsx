@@ -86,7 +86,7 @@ function App() {
         setStatusText('Senaryo verisi yüklenemedi');
       } finally {
         setLoading(false);
-        addNotification('BKZS Komuta Konsolu Başlatıldı.', 'success');
+        addNotification('Quicpass Komuta Konsolu Başlatıldı.', 'success');
       }
     };
 
@@ -183,7 +183,7 @@ function App() {
         <div className="launch-core">
           <Orbit size={42} />
         </div>
-        <h1>BKZS Mission Console</h1>
+        <h1>Quicpass Mission Console</h1>
         <p>Uydu tarama, risk birleştirme ve güvenli koridor motoru başlatılıyor.</p>
       </div>
     );
@@ -256,13 +256,13 @@ function App() {
         <div className="guide-modal-overlay" onClick={() => setIsGuideOpen(false)}>
           <div className="guide-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="guide-header">
-              <h2><BookOpen size={22} style={{ marginRight: '8px' }}/> BKZS Kullanım Kılavuzu</h2>
+              <h2><BookOpen size={22} style={{ marginRight: '8px' }}/> Quicpass Kullanım Kılavuzu</h2>
               <button className="close-guide" onClick={() => setIsGuideOpen(false)}><X size={24} /></button>
             </div>
             <div className="guide-body">
               <section>
                 <h3>1. Sistemin Amacı ve Hedefi</h3>
-                <p><strong>BKZS (Bilgi ve Kriz Yönetimi Sistemi)</strong>, afet alanlarında sahadan gelen anlık uydu verileri ve sensör bildirimlerini işleyerek <strong>yapay zeka (AI) güdümlü güvenli kargo/kurtarma rotaları</strong> çizen proaktif bir komuta ekranıdır.</p>
+                <p><strong>Quicpass (Akıllı Afet Yönetimi Sistemi)</strong>, afet alanlarında sahadan gelen anlık uydu verileri ve sensör bildirimlerini işleyerek <strong>yapay zeka (AI) güdümlü güvenli kargo/kurtarma rotaları</strong> çizen proaktif bir komuta ekranıdır.</p>
               </section>
 
               <hr />
