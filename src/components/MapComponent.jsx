@@ -309,31 +309,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           </Circle>
         ))}
 
-        {/* Dangerous cells */}
-        {routeData?.dangerousCells?.slice(0, 140).map((cell, index) => {
-          const halfLat = routeData.cellDimensions.lat / 2;
-          const halfLon = routeData.cellDimensions.lon / 2;
-          const color = cell.topDriver?.color || (cell.blocked ? '#ef4444' : '#f59e0b');
-
-          return (
-            <Rectangle
-              key={`cell-${index}`}
-              bounds={{
-                north: cell.lat + halfLat,
-                south: cell.lat - halfLat,
-                east: cell.lon + halfLon,
-                west: cell.lon - halfLon,
-              }}
-              options={{
-                strokeColor: color,
-                strokeWeight: 1,
-                fillColor: color,
-                fillOpacity: cell.blocked ? 0.34 : 0.18,
-                strokeOpacity: 0.6,
-              }}
-            />
-          );
-        })}
+        {/* Dangerous cells kapalı - Harita temizliği için */}
 
         {/* Routes */}
         {routeData?.routes &&
