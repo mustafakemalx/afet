@@ -2,13 +2,13 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, Polyline, Circle, Marker, InfoWindow, Rectangle, DirectionsRenderer } from '@react-google-maps/api';
 
 // API anahtarını doğrudan yazıyoruz (test amaçlı)
-const GOOGLE_MAPS_KEY = 'AIzaSyAalgHoNB06A4G40NJZEjJWWrthTWjQ08s';
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
 
 const ROUTE_STYLES = {
   safest: { strokeColor: '#22c55e', strokeWeight: 7, strokeOpacity: 0.95 },
-  balanced: { strokeColor: '#f59e0b', strokeWeight: 5, strokeOpacity: 0.85, strokeDashArray: '8 10' },
-  shortest: { strokeColor: '#ef4444', strokeWeight: 4, strokeOpacity: 0.7, strokeDashArray: '4 12' },
-  contingency: { strokeColor: '#38bdf8', strokeWeight: 4, strokeOpacity: 0.8, strokeDashArray: '12 10' },
+  balanced: { strokeColor: '#f59e0b', strokeWeight: 5, strokeOpacity: 0.85 },
+  shortest: { strokeColor: '#ef4444', strokeWeight: 4, strokeOpacity: 0.7 },
+  contingency: { strokeColor: '#38bdf8', strokeWeight: 4, strokeOpacity: 0.8 },
 };
 
 const ROLE_COLORS = {
@@ -75,11 +75,46 @@ const dispatchMarkerIcon = {
 };
 
 function toLatLng(coords) {
-  return { lat: coords[0], lng: coords[1] };
+  if (!coords) return null;
+
+  if (Array.isArray(coords) && coords.length >= 2) {
+    const lat = Number(coords[0]);
+    const lng = Number(coords[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+
+  if (typeof coords === 'string') {
+    const [latRaw, lngRaw] = coords.trim().split(/[,\s]+/);
+    const lat = Number(latRaw);
+    const lng = Number(lngRaw);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+
+  if (typeof coords === 'object') {
+    if (typeof coords.lat === 'function' && typeof coords.lng === 'function') {
+      const lat = Number(coords.lat());
+      const lng = Number(coords.lng());
+      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+    }
+
+    const lat = Number(coords.lat);
+    const lng = Number(coords.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+  }
+
+  return null;
 }
 
 function toLatLngPath(path) {
-  return path.map((p) => ({ lat: p[0], lng: p[1] }));
+  if (!Array.isArray(path)) return [];
+  return path.map((p) => toLatLng(p)).filter(Boolean);
+}
+
+function isValidLatLng(point) {
+  if (!point) return false;
+  const lat = Number(point.lat);
+  const lng = Number(point.lng);
+  return Number.isFinite(lat) && Number.isFinite(lng);
 }
 
 export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive }) {
@@ -92,6 +127,12 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_KEY,
   });
+
+  useEffect(() => {
+    if (!GOOGLE_MAPS_KEY) {
+      console.error('VITE_GOOGLE_MAPS_KEY is missing. Add it to .env.');
+    }
+  }, []);
 
   const activeRoute = routeData?.routes?.[activeRouteKey] || routeData?.routes?.safest || null;
 
@@ -132,6 +173,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
       const path = route.path;
       const origin = toLatLng(path[0]);
       const destination = toLatLng(path[path.length - 1]);
+      if (!origin || !destination) return;
       const pts = path.slice(1, -1);
 
       // We wrap the request in a function to let us retry with fewer waypoints if Google fails to find a path
@@ -141,7 +183,10 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           const step = Math.max(1, Math.floor(pts.length / (waypointCount + 1)));
           for (let i = 1; i <= waypointCount; i++) {
             const pt = pts[i * step];
-            if (pt) waypoints.push({ location: toLatLng(pt), stopover: false }); // 'stopover: false' means "via point", pass through without strictly breaking the route into legs
+            const parsedPoint = toLatLng(pt);
+            if (parsedPoint) {
+              waypoints.push({ location: parsedPoint, stopover: false }); // 'stopover: false' means "via point", pass through without strictly breaking the route into legs
+            }
           }
         }
 
@@ -220,12 +265,13 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
 
   const isDark = mapStyle === 'dark';
   const mapTypeId = getMapTypeId(mapStyle);
+  const scenarioCenter = toLatLng(scenario?.center) || { lat: 39.0, lng: 35.0 };
 
   return (
     <div className="map-shell">
       <GoogleMap
         mapContainerStyle={containerStyle}
-        center={scenario?.center ? toLatLng(scenario.center) : { lat: 39.0, lng: 35.0 }}
+        center={scenarioCenter}
         zoom={13}
         onLoad={onMapLoad}
         mapTypeId={mapTypeId}
@@ -262,23 +308,22 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         )}
 
         {/* Safe corridors */}
-        {scenario?.safeCorridors?.map((corridor) => (
-          <Polyline
-            key={corridor.id}
-            path={toLatLngPath(corridor.path)}
-            options={{
-              strokeColor: '#34d399',
-              strokeWeight: 3,
-              strokeOpacity: 0.85,
-              strokeDashArray: [10, 10],
-              icons: [{
-                icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.85, strokeColor: '#34d399', scale: 3 },
-                offset: '0',
-                repeat: '20px',
-              }],
-            }}
-          />
-        ))}
+        {scenario?.safeCorridors?.map((corridor) => {
+          const corridorPath = toLatLngPath(corridor.path);
+          if (corridorPath.length < 2 || !corridorPath.every(isValidLatLng)) return null;
+
+          return (
+            <Polyline
+              key={corridor.id}
+              path={corridorPath}
+              options={{
+                strokeColor: '#34d399',
+                strokeWeight: 3,
+                strokeOpacity: 0.85,
+              }}
+            />
+          );
+        })}
 
         {/* Hazard circles */}
         {scenario?.hazards?.map((hazard) => (
@@ -362,10 +407,13 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
               }
 
               // Fallback to straight lines while fetching
+              const routePath = toLatLngPath(route.path);
+              if (routePath.length < 2 || !routePath.every(isValidLatLng)) return null;
+
               return (
                 <Polyline
                   key={`poly-${routeKey}`}
-                  path={toLatLngPath(route.path)}
+                  path={routePath}
                   options={{
                     strokeColor: style.strokeColor,
                     strokeWeight: isActive ? style.strokeWeight : Math.max(2, style.strokeWeight - 2),

@@ -1,7 +1,9 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { SCENARIOS, HAZARD_META, getScenarioById, getSiteById, summarizeScenario } = require('./data/scenarios');
+const { fetchSentinelMetaForScenario, mergeScenarioWithSentinel } = require('./data/sentinel');
+const { fetchRealtimeWeatherForScenario } = require('./data/meteo');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -11,13 +13,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const CITY_CLIMATE = {
-  'Hatay': { tempBase: 21, tempRange: 6, humBase: 48, humRange: 15, windBase: 10, windRange: 12, conditions: ['Parçalı bulutlu', 'Açık', 'Az bulutlu', 'Güneşli'] },
-  'İzmir': { tempBase: 23, tempRange: 8, humBase: 58, humRange: 20, windBase: 14, windRange: 18, conditions: ['Rüzgarlı', 'Parçalı bulutlu', 'Açık', 'Hafif yağmurlu'] },
-  'İstanbul': { tempBase: 17, tempRange: 10, humBase: 62, humRange: 18, windBase: 12, windRange: 16, conditions: ['Kapalı', 'Parçalı bulutlu', 'Sisli', 'Hafif yağmurlu', 'Az bulutlu'] },
+  'Hatay': { tempBase: 21, tempRange: 6, humBase: 48, humRange: 15, windBase: 10, windRange: 12, conditions: ['ParÃ§alÄ± bulutlu', 'AÃ§Ä±k', 'Az bulutlu', 'GÃ¼neÅŸli'] },
+  'Ä°zmir': { tempBase: 23, tempRange: 8, humBase: 58, humRange: 20, windBase: 14, windRange: 18, conditions: ['RÃ¼zgarlÄ±', 'ParÃ§alÄ± bulutlu', 'AÃ§Ä±k', 'Hafif yaÄŸmurlu'] },
+  'Ä°stanbul': { tempBase: 17, tempRange: 10, humBase: 62, humRange: 18, windBase: 12, windRange: 16, conditions: ['KapalÄ±', 'ParÃ§alÄ± bulutlu', 'Sisli', 'Hafif yaÄŸmurlu', 'Az bulutlu'] },
+  'Trabzon': { tempBase: 16, tempRange: 7, humBase: 70, humRange: 18, windBase: 12, windRange: 16, conditions: ['Parcali bulutlu', 'Yagmurlu', 'Kapali', 'Acik'] },
 };
 
 function generateWeather(city) {
-  const profile = CITY_CLIMATE[city] || { tempBase: 19, tempRange: 8, humBase: 52, humRange: 18, windBase: 11, windRange: 14, conditions: ['Parçalı bulutlu'] };
+  const profile = CITY_CLIMATE[city] || { tempBase: 19, tempRange: 8, humBase: 52, humRange: 18, windBase: 11, windRange: 14, conditions: ['ParÃ§alÄ± bulutlu'] };
   const rand = () => Math.random();
   const tempC = Math.round(profile.tempBase + (rand() - 0.5) * profile.tempRange);
   const humidity = Math.round(profile.humBase + (rand() - 0.5) * profile.humRange);
@@ -434,24 +437,57 @@ function buildResponseScenario(scenario) {
     })),
     safeCorridors: scenario.safeCorridors,
     defaultRoute: scenario.defaultRoute,
-    weather: generateWeather(scenario.city),
+    weather: scenario.weather?.source ? scenario.weather : generateWeather(scenario.city),
+    sentinelMeta: scenario.sentinelMeta || { enabled: false, available: false },
   };
 }
 
-app.get('/api/scenarios', (req, res) => {
-  res.json(SCENARIOS.map((scenario) => buildResponseScenario(scenario)));
+async function hydrateScenario(baseScenario) {
+  if (!baseScenario) return null;
+
+  try {
+    const [sentinelResult, weatherResult] = await Promise.allSettled([
+      fetchSentinelMetaForScenario(baseScenario),
+      fetchRealtimeWeatherForScenario(baseScenario),
+    ]);
+
+    const sentinelMeta = sentinelResult.status === 'fulfilled' ? sentinelResult.value : null;
+    const realtimeWeather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
+
+    return {
+      ...mergeScenarioWithSentinel(baseScenario, sentinelMeta),
+      weather: realtimeWeather || baseScenario.weather,
+    };
+  } catch (error) {
+    return mergeScenarioWithSentinel(baseScenario, null);
+  }
+}
+
+app.get('/api/scenarios', async (req, res) => {
+  try {
+    const scenarios = await Promise.all(
+      SCENARIOS.map(async (scenario) => {
+        const hydrated = await hydrateScenario(scenario);
+        return buildResponseScenario(hydrated);
+      })
+    );
+    return res.json(scenarios);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to load scenarios' });
+  }
 });
 
-app.get('/api/scenarios/:id', (req, res) => {
+app.get('/api/scenarios/:id', async (req, res) => {
   const scenario = getScenarioById(req.params.id);
   if (!scenario) {
     return res.status(404).json({ error: 'Scenario not found' });
   }
 
-  return res.json(buildResponseScenario(scenario));
+  const hydrated = await hydrateScenario(scenario);
+  return res.json(buildResponseScenario(hydrated));
 });
 
-app.post('/api/route', (req, res) => {
+app.post('/api/route', async (req, res) => {
   const { scenarioId, start, end, includeContingency = true } = req.body;
   const scenario = getScenarioById(scenarioId);
 
@@ -459,18 +495,20 @@ app.post('/api/route', (req, res) => {
     return res.status(404).json({ error: 'Scenario not found' });
   }
 
+  const hydratedScenario = await hydrateScenario(scenario);
+
   let startPoint = start;
   let endPoint = end;
 
   if (!startPoint || !endPoint) {
-    const defaultStart = getSiteById(scenario, scenario.defaultRoute.startSiteId);
-    const defaultEnd = getSiteById(scenario, scenario.defaultRoute.endSiteId);
+    const defaultStart = getSiteById(hydratedScenario, hydratedScenario.defaultRoute.startSiteId);
+    const defaultEnd = getSiteById(hydratedScenario, hydratedScenario.defaultRoute.endSiteId);
     startPoint = defaultStart.coords;
     endPoint = defaultEnd.coords;
   }
 
-  const layout = buildGrid(scenario, startPoint, endPoint);
-  const shortest = buildDirectRoute(startPoint, endPoint, scenario);
+  const layout = buildGrid(hydratedScenario, startPoint, endPoint);
+  const shortest = buildDirectRoute(startPoint, endPoint, hydratedScenario);
   const balanced = runAStar('balanced', layout, startPoint, endPoint);
   const safest = runAStar('safest', layout, startPoint, endPoint);
   const contingency = includeContingency ? runAStar('alternative', layout, startPoint, endPoint, safest.usedKeys) : null;
@@ -490,7 +528,7 @@ app.post('/api/route', (req, res) => {
     }));
 
   return res.json({
-    scenario: buildResponseScenario(scenario),
+    scenario: buildResponseScenario(hydratedScenario),
     routes: {
       shortest: serializeRoute(shortest),
       balanced: serializeRoute(balanced),
@@ -505,8 +543,8 @@ app.post('/api/route', (req, res) => {
       etaBufferMinutes: Math.max(0, safest.etaMinutes - shortest.etaMinutes),
       scanSummary: {
         sectorsScanned: layout.width * layout.height,
-        aiFindings: scenario.hazards.length,
-        confidence: scenario.mission.confidence,
+        aiFindings: hydratedScenario.hazards.length,
+        confidence: hydratedScenario.mission.confidence,
       },
       brief: safest.driverSummary,
     },
