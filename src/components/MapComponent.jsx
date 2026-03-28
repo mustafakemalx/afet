@@ -256,6 +256,16 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           </Marker>
         )}
       </MapContainer>
+
+      <div className="map-legend">
+        <div className="map-legend-title">Gösterge</div>
+        <div className="map-legend-item"><span className="legend-line" style={{background: '#22c55e'}} /> Güvenli Rota</div>
+        <div className="map-legend-item"><span className="legend-line" style={{background: '#f59e0b'}} /> Dengeli Rota</div>
+        <div className="map-legend-item"><span className="legend-line" style={{background: '#ef4444'}} /> Riskli Rota</div>
+        <div className="map-legend-item"><span className="legend-line" style={{background: '#38bdf8', opacity: 0.7}} /> Yedek Hat</div>
+        <div className="map-legend-item"><span className="legend-circle hazard" /> Tehlike Bölgesi</div>
+        <div className="map-legend-item"><span className="legend-circle safe" /> Güvenli Koridor</div>
+      </div>
     </div>
   );
 }

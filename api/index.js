@@ -10,6 +10,24 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+const CITY_CLIMATE = {
+  'Hatay': { tempBase: 21, tempRange: 6, humBase: 48, humRange: 15, windBase: 10, windRange: 12, conditions: ['Parçalı bulutlu', 'Açık', 'Az bulutlu', 'Güneşli'] },
+  'İzmir': { tempBase: 23, tempRange: 8, humBase: 58, humRange: 20, windBase: 14, windRange: 18, conditions: ['Rüzgarlı', 'Parçalı bulutlu', 'Açık', 'Hafif yağmurlu'] },
+  'İstanbul': { tempBase: 17, tempRange: 10, humBase: 62, humRange: 18, windBase: 12, windRange: 16, conditions: ['Kapalı', 'Parçalı bulutlu', 'Sisli', 'Hafif yağmurlu', 'Az bulutlu'] },
+};
+
+function generateWeather(city) {
+  const profile = CITY_CLIMATE[city] || { tempBase: 19, tempRange: 8, humBase: 52, humRange: 18, windBase: 11, windRange: 14, conditions: ['Parçalı bulutlu'] };
+  const rand = () => Math.random();
+  const tempC = Math.round(profile.tempBase + (rand() - 0.5) * profile.tempRange);
+  const humidity = Math.round(profile.humBase + (rand() - 0.5) * profile.humRange);
+  const windKmh = Math.round(profile.windBase + rand() * profile.windRange);
+  const visibilityKm = +(7 + rand() * 6).toFixed(1);
+  const condition = profile.conditions[Math.floor(rand() * profile.conditions.length)];
+  const feelsLikeC = Math.round(tempC - (windKmh > 20 ? 3 : 1));
+  return { temperatureC: tempC, windKmh, humidity, visibilityKm, condition, feelsLikeC, source: 'Meteoroloji Tahmini' };
+}
+
 class PriorityQueue {
   constructor() { this.elements = []; }
   isEmpty() { return this.elements.length === 0; }
@@ -416,6 +434,7 @@ function buildResponseScenario(scenario) {
     })),
     safeCorridors: scenario.safeCorridors,
     defaultRoute: scenario.defaultRoute,
+    weather: generateWeather(scenario.city),
   };
 }
 

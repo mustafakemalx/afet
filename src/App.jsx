@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { AlertTriangle, Orbit, Radar } from 'lucide-react';
+import { AlertTriangle, Orbit, Radar, WifiOff, Bell, BellRing, Info, CheckCircle, X, RefreshCw, Trash2 } from 'lucide-react';
 import MapComponent from './components/MapComponent';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import './index.css';
 
-const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:5000';
+const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:5001';
 
 function getSite(scenario, siteId) {
   return scenario?.sites?.find((site) => site.id === siteId) || null;
@@ -25,7 +25,38 @@ function App() {
   const [isRouting, setIsRouting] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [mapStyle, setMapStyle] = useState('satellite');
-  const [statusText, setStatusText] = useState('BKZS görev konsolu hazırlanıyor');
+  const [isOffline, setIsOffline] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  const addNotification = (msg, type = 'info') => {
+    const id = Date.now() + Math.random();
+    const newNotif = {
+      id,
+      message: msg,
+      type,
+      time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      toast: true
+    };
+    setNotifications(prev => [newNotif, ...prev].slice(0, 50));
+    setTimeout(() => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, toast: false } : n));
+    }, 4500);
+  };
+
+  const deleteNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const toggleOffline = () => {
+    const next = !isOffline;
+    setIsOffline(next);
+    if (next) {
+      addNotification('Mesh Ağı Aktif (Offline Mod). Veriler önbellekten okunuyor.', 'danger');
+    } else {
+      addNotification('Uydu ve İnternet bağlantısı sağlandı. Online mod devrede.', 'success');
+    }
+  };
 
   useEffect(() => {
     if (theme === 'light') {
@@ -54,6 +85,7 @@ function App() {
         setStatusText('Senaryo verisi yüklenemedi');
       } finally {
         setLoading(false);
+        addNotification('BKZS Komuta Konsolu Başlatıldı.', 'success');
       }
     };
 
@@ -73,10 +105,12 @@ function App() {
 
     setIsRouting(true);
     setDispatchActive(false);
-    setStatusText(withScanAnimation ? 'Yerli uydu taraması ve rota yeniden hesaplanıyor' : 'Güvenli rota oluşturuluyor');
 
     if (withScanAnimation) {
       setScanPulse(true);
+      addNotification('Yerli uydu taraması ve rota yeniden hesaplanıyor...', 'info');
+    } else {
+      addNotification('Güvenli rota yeniden oluşturuluyor...', 'info');
     }
 
     try {
@@ -90,10 +124,13 @@ function App() {
       setRouteData(response.data);
       setSelectedScenario(response.data.scenario);
       setActiveRouteKey(response.data.analysis?.recommendedMode || 'safest');
-      setStatusText('Görev koridoru hazır. En güvenli rota aktif.');
+      addNotification('Görev koridoru hazır. En güvenli rota aktif.', 'success');
+      if (response.data.scenario.stats.criticalCount >= 2) {
+         setTimeout(() => addNotification(`${response.data.scenario.city} görev alanında kritik bulgular var!`, 'danger'), 800);
+      }
     } catch (error) {
       console.error('Route request failed', error);
-      setStatusText('Rota hesaplanamadı');
+      addNotification('Rota hesaplanamadı veya AFAD sunucusuna ulaşılamadı.', 'danger');
     } finally {
       setIsRouting(false);
       window.setTimeout(() => setScanPulse(false), 900);
@@ -113,7 +150,7 @@ function App() {
     setSelectedStartSiteId(nextStart);
     setSelectedEndSiteId(nextEnd);
     setRouteData(null);
-    setStatusText(`${scenario.city} görev alanı yükleniyor`);
+    addNotification(`${scenario.city} görev alanı yükleniyor...`, 'neutral');
     fetchRoute(scenario, nextStart, nextEnd, true);
   };
 
@@ -127,11 +164,15 @@ function App() {
 
   const handleStartChange = (siteId) => {
     setSelectedStartSiteId(siteId);
+    const siteLabel = getSite(selectedScenario, siteId)?.label;
+    addNotification(`Çıkış noktası ${siteLabel} olarak güncellendi.`, 'neutral');
     handleRouteUpdate(siteId, selectedEndSiteId);
   };
 
   const handleEndChange = (siteId) => {
     setSelectedEndSiteId(siteId);
+    const siteLabel = getSite(selectedScenario, siteId)?.label;
+    addNotification(`Varış hedefi ${siteLabel} olarak güncellendi.`, 'neutral');
     handleRouteUpdate(selectedStartSiteId, siteId);
   };
 
@@ -170,7 +211,42 @@ function App() {
         mapStyle={mapStyle}
         setMapStyle={setMapStyle}
         isRouting={isRouting}
+        isOffline={isOffline}
+        toggleOffline={toggleOffline}
       />
+
+      <div className="notif-fixed-wrapper">
+        <button className="notif-bell" onClick={handleRefresh} disabled={isRouting} title="Verileri Güncelle">
+           <RefreshCw size={20} className={isRouting ? 'spin' : ''} />
+        </button>
+        <div className="notif-bell" onClick={() => setIsNotifOpen(!isNotifOpen)}>
+           {notifications.length > 0 ? <BellRing size={20} /> : <Bell size={20} />}
+           {notifications.length > 0 && <div className="notif-badge">{notifications.length > 9 ? '9+' : notifications.length}</div>}
+        </div>
+        {isNotifOpen && (
+          <div className="notif-dropdown">
+            <div className="notif-header">
+              <span>Bildirim Geçmişi</span>
+              <X size={18} style={{cursor:'pointer'}} onClick={() => setIsNotifOpen(false)} />
+            </div>
+            <div className="notif-body">
+              {notifications.length === 0 ? (
+                <div className="empty-notif">Henüz bildirim yok.</div>
+              ) : (
+                notifications.map(n => (
+                  <div key={n.id} className={`notif-item type-${n.type}`}>
+                     <div style={{flex: 1}}>
+                       <div>{n.message}</div>
+                       <div className="notif-time">{n.time}</div>
+                     </div>
+                     <Trash2 size={14} className="notif-delete" onClick={() => deleteNotification(n.id)} />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       <main className="workspace">
         <section className="mission-strip">
@@ -178,24 +254,6 @@ function App() {
             <p className="eyebrow">Afet Yönetiminde Yerli Uydu Verisi Entegrasyonu</p>
             <h1>{selectedScenario?.name}</h1>
             <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
-          </div>
-
-          <div className="scan-chip-row">
-            <div className={`scan-chip ${scanPulse ? 'is-active' : ''}`}>
-              <Radar size={16} />
-              <span>{statusText}</span>
-            </div>
-            {alertState && selectedScenario && (
-              <div className="scan-chip danger-chip">
-                <AlertTriangle size={16} />
-                <span>{`${selectedScenario.city} görev alanında kritik bulgular var`}</span>
-              </div>
-            )}
-            {activeStart && activeEnd && (
-              <div className="scan-chip subtle">
-                <span>{`${activeStart.label} -> ${activeEnd.label}`}</span>
-              </div>
-            )}
           </div>
         </section>
 
@@ -215,6 +273,18 @@ function App() {
           />
         </section>
       </main>
+
+      <div className="toast-container">
+        {notifications.filter(n => n.toast).slice(0, 4).map((n, i, arr) => (
+          <div key={`toast-${n.id}`} className={`toast toast-${n.type}`} style={{ opacity: 1 - (i * 0.2) }}>
+            {n.type === 'danger' && <AlertTriangle size={20} />}
+            {n.type === 'success' && <CheckCircle size={20} />}
+            {n.type === 'info' && <Orbit size={20} className={scanPulse ? 'spin' : ''} />}
+            {n.type === 'neutral' && <Info size={20} />}
+            <div>{n.message}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

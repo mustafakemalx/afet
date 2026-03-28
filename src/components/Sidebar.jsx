@@ -9,6 +9,8 @@ import {
   Sparkles,
   Sun,
   Truck,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 
 function formatClock(isoString) {
@@ -43,6 +45,8 @@ export default function Sidebar({
   mapStyle,
   setMapStyle,
   isRouting,
+  isOffline,
+  toggleOffline,
 }) {
   return (
     <aside className="sidebar">
@@ -117,8 +121,8 @@ export default function Sidebar({
       )}
 
       {selectedScenario && (
-        <div className="sidebar-inline-panels">
-          <section className="panel panel-wide">
+        <>
+          <section className="panel">
             <div className="section-title">
               <Map size={16} />
               <span>Görev noktası seçimi</span>
@@ -134,7 +138,7 @@ export default function Sidebar({
               onChange={(event) => onStartChange(event.target.value)}
             >
               {selectedScenario.sites.map((site) => (
-                <option key={site.id} value={site.id}>
+                <option key={site.id} value={site.id} disabled={site.id === selectedEndSiteId}>
                   {site.label}
                 </option>
               ))}
@@ -150,16 +154,24 @@ export default function Sidebar({
               onChange={(event) => onEndChange(event.target.value)}
             >
               {selectedScenario.sites.map((site) => (
-                <option key={site.id} value={site.id}>
+                <option key={site.id} value={site.id} disabled={site.id === selectedStartSiteId}>
                   {site.label}
                 </option>
               ))}
             </select>
 
-            <div className="action-row">
+            <div className="action-row" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <button className="btn primary" type="button" onClick={onRefresh} disabled={isRouting}>
                 <RefreshCw size={16} className={isRouting ? 'spin' : ''} />
                 Uydu taramayı yenile
+              </button>
+              <button
+                className={`btn ${isOffline ? 'danger' : 'secondary'}`}
+                type="button"
+                onClick={toggleOffline}
+              >
+                {isOffline ? <WifiOff size={16} /> : <Wifi size={16} />}
+                Bağlantı (Online/Mesh)
               </button>
               <button
                 className={`btn ${dispatchActive ? 'success' : ''}`}
@@ -173,13 +185,13 @@ export default function Sidebar({
             </div>
           </section>
 
-          <section className="panel panel-narrow">
+          <section className="panel">
             <div className="section-title">
               <Layers size={16} />
               <span>Harita katmanı</span>
             </div>
 
-            <div className="toggle-row sidebar-toggle-column">
+            <div className="toggle-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               {[
                 { id: 'satellite', label: 'Uydu' },
                 { id: 'dark', label: 'Gece' },
@@ -196,7 +208,7 @@ export default function Sidebar({
               ))}
             </div>
           </section>
-        </div>
+        </>
       )}
     </aside>
   );
