@@ -208,33 +208,7 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Koridor Karşılaştırması */}
-      <div className="panel floating-panel dashboard-card">
-        <div className="section-title">
-          <Route size={16} />
-          <span>Koridor karşılaştırması</span>
-        </div>
 
-        <div className="mini-route-list compact-route-list route-grid-list">
-          {routeEntries.map(([routeKey, route]) => (
-            <button
-              type="button"
-              key={routeKey}
-              className={`mini-route-card tone-${toneForRoute(routeKey)} ${activeRouteKey === routeKey ? 'is-active' : ''}`}
-              onClick={() => setActiveRouteKey(routeKey)}
-            >
-              <div>
-                <strong>{ROUTE_COPY[routeKey] || routeKey}</strong>
-                <p>{route.distanceKm} km</p>
-              </div>
-              <div>
-                <strong>{route.etaMinutes} dk</strong>
-                <p>risk {route.riskScore}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Neden Bu Rota */}
       {routeData?.analysis && (
