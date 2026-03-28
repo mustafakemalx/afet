@@ -67,16 +67,39 @@ async function fetchGoogleWeather(lat, lon, apiKey) {
     cache.set(key, { ts: Date.now(), data: weather });
     return weather;
   } catch (error) {
-    console.warn('[Weather API Error]', error?.response?.data || error.message);
-    // Hata durumunda (403 vs) sahte / mock veri döner
+    console.warn('[Google Weather API Error]', error?.response?.status || error.message);
+    
+    // Google 404 veya 403 (Referer engeli vs) verirse direkt açık kaynak API'mize (Open-Meteo) fallback yapiyoruz.
+    try {
+      const openMeteoUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto`;
+      const fallbackPayload = await axios.get(openMeteoUrl, { timeout: 7000 });
+      const current = fallbackPayload?.data?.current;
+      if (current) {
+        const temp = Number(current.temperature_2m);
+        const wCode = Number(current.weather_code);
+        return {
+          temperatureC: Number.isFinite(temp) ? Math.round(temp) : 18,
+          windKmh: Number.isFinite(Number(current.wind_speed_10m)) ? Math.round(Number(current.wind_speed_10m)) : 12,
+          humidity: Number.isFinite(Number(current.relative_humidity_2m)) ? Math.round(Number(current.relative_humidity_2m)) : 50,
+          visibilityKm: 8,
+          condition: codeToLabel(wCode),
+          feelsLikeC: Number.isFinite(Number(current.apparent_temperature)) ? Math.round(Number(current.apparent_temperature)) : 18,
+          source: 'Open-Meteo Fallback',
+        };
+      }
+    } catch(fallbackErr) {
+       console.warn('[OpenMeteo Fallback Error]', fallbackErr.message);
+    }
+    
+    // Her iki API de patlarsa mock/yedek veri dön
     return {
       temperatureC: 18,
       windKmh: 12,
       humidity: 50,
       visibilityKm: 8,
-      condition: 'API Bekleniyor (GCP)',
+      condition: 'Bağlantı Hatası',
       feelsLikeC: 18,
-      source: 'Google API (Error)',
+      source: 'Offline Cache',
     };
   }
 }
