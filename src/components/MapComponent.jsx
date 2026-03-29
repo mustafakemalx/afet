@@ -141,6 +141,11 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
     }
   }, [scenario]);
 
+  // Wipe Google Maps directions cache when fetching an entirely new route from the backend
+  useEffect(() => {
+    setDirectionsCache({});
+  }, [routeData]);
+
   // Directions API implementation - Snap coordinates to real streets
   useEffect(() => {
     if (!isLoaded || !routeData?.routes || !window.google?.maps?.DirectionsService) return;
@@ -150,8 +155,9 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
     Object.entries(routeData.routes).forEach(([routeKey, route]) => {
       if (!route || !route.path || route.path.length < 2) return;
 
-      if (directionsCache[routeKey] && directionsCache[routeKey].originalPath === route.path && !simWaypoints) {
-        return; // Already calculated (except when detour requested)
+      const cacheKey = route.path + (simWaypoints ? JSON.stringify(simWaypoints) : '');
+      if (directionsCache[routeKey] && directionsCache[routeKey].signature === cacheKey) {
+        return; // Already calculated perfectly (avoids API spam loop!)
       }
 
       const path = route.path;
@@ -189,7 +195,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
             if (status === window.google.maps.DirectionsStatus.OK) {
               setDirectionsCache((prev) => ({
                 ...prev,
-                [routeKey]: { result, originalPath: route.path }
+                [routeKey]: { result, originalPath: route.path, signature: path + (simWaypoints ? JSON.stringify(simWaypoints) : '') }
               }));
             } else if (status === window.google.maps.DirectionsStatus.ZERO_RESULTS && waypointCount > 0) {
               console.warn(`Waypoints too strict for ${routeKey}, retrying with fewer points...`);

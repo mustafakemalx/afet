@@ -200,6 +200,8 @@ function App() {
       addNotification('SİMÜLASYON: Yapay Zeka komutayı devretti. Defne hastanesinden (field-2) 2. Ekibi yola çıkardı!', 'warning');
       setSelectedStartSiteId('field-2'); // Swap to Team 2 Base
       setDispatchActive(false);
+      // MUST trigger new route fetch to generate the physical path correctly
+      fetchRoute(selectedScenario, 'field-2', 'military-1', false);
     }
     if (scenarioTime === 35 && (simState.phase === 3.5 || simState.phase === 3)) {
       setDispatchActive(true); // Team 2 starts moving
