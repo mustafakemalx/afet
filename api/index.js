@@ -528,7 +528,7 @@ app.get('/api/scenarios/:id', async (req, res) => {
 });
 
 app.post('/api/route', async (req, res) => {
-  const { scenarioId, start, end, includeContingency = true } = req.body;
+  const { scenarioId, start, end, includeContingency = true, mode } = req.body;
   const scenario = getScenarioById(scenarioId);
 
   if (!scenario) {
@@ -548,10 +548,21 @@ app.post('/api/route', async (req, res) => {
   }
 
   const layout = buildGrid(hydratedScenario, startPoint, endPoint);
-  const shortest = buildDirectRoute(startPoint, endPoint, hydratedScenario);
-  const balanced = runAStar('balanced', layout, startPoint, endPoint);
+  let shortest = null;
+  let balanced = null;
+  let contingency = null;
+
   const safest = runAStar('safest', layout, startPoint, endPoint);
-  const contingency = includeContingency ? runAStar('alternative', layout, startPoint, endPoint, safest.usedKeys) : null;
+
+  if (mode !== 'safest_only') {
+    shortest = buildDirectRoute(startPoint, endPoint, hydratedScenario);
+    balanced = runAStar('balanced', layout, startPoint, endPoint);
+    contingency = includeContingency ? runAStar('alternative', layout, startPoint, endPoint, safest.usedKeys) : null;
+  } else {
+    // If strict fleet mode, just create dummy metrics for the missing routes to maintain frontend JSON struct
+    shortest = safest; 
+    balanced = safest;
+  }
 
   const riskReductionScore = Math.max(0, shortest.riskScore - safest.riskScore);
   const riskReductionPercent =

@@ -107,18 +107,26 @@ function getDistanceKm(p1, p2) {
   return R * c;
 }
 
-export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints, simVehicleDir, onHazardCollision, onVehicleArrival, onVehicleReturn }) {
+export default function MapComponent({
+  scenario,
+  fleetRoutes = [],
+  mapStyle,
+  dispatchActive,
+  activeInfoWindow,
+  setActiveInfoWindow,
+  simVehicleDir,
+  simVehicleType,
+  onAllVehiclesArrival,
+  onAllVehiclesReturn,
+}) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
-  const [vehicleHeading, setVehicleHeading] = useState(0);
   const [directionsCache, setDirectionsCache] = useState({});
-  const [animPath, setAnimPath] = useState([]);
+  const [animPaths, setAnimPaths] = useState({});
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_KEY,
   });
-
-  const activeRoute = routeData?.routes?.[activeRouteKey] || routeData?.routes?.safest || null;
 
   const onMapLoad = useCallback((map) => {
     mapRef.current = map;
@@ -144,18 +152,21 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
   // Wipe Google Maps directions cache when fetching an entirely new route from the backend
   useEffect(() => {
     setDirectionsCache({});
-  }, [routeData]);
+  }, [fleetRoutes]);
 
   // Directions API implementation - Snap coordinates to real streets
   useEffect(() => {
-    if (!isLoaded || !routeData?.routes || !window.google?.maps?.DirectionsService) return;
+    if (!isLoaded || fleetRoutes.length === 0 || !window.google?.maps?.DirectionsService) return;
 
     const ds = new window.google.maps.DirectionsService();
 
-    Object.entries(routeData.routes).forEach(([routeKey, route]) => {
+    fleetRoutes.forEach((fleetEntry) => {
+      const routeKey = fleetEntry.id;
+      const route = fleetEntry.route;
+      
       if (!route || !route.path || route.path.length < 2) return;
 
-      const cacheKey = route.path + (simWaypoints ? JSON.stringify(simWaypoints) : '');
+      const cacheKey = JSON.stringify(route.path);
       if (directionsCache[routeKey] && directionsCache[routeKey].signature === cacheKey) {
         return; // Already calculated perfectly (avoids API spam loop!)
       }
@@ -165,22 +176,14 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
       const destination = toLatLng(path[path.length - 1]);
       const pts = path.slice(1, -1);
 
-      // We wrap the request in a function to let us retry with fewer waypoints if Google fails to find a path
       const tryFetchRoute = (waypointCount) => {
         let waypoints = [];
         
-        // Priority 1: Force Detour simWaypoints
-        if (simWaypoints && simWaypoints.length > 0) {
-          simWaypoints.forEach(wp => {
-            waypoints.push({ location: new window.google.maps.LatLng(wp[0], wp[1]), stopover: false });
-          });
-        } 
-        // Priority 2: Standard route waypoints to snap to dummy backend polyline
-        else if (pts.length > 0 && waypointCount > 0) {
+        if (pts.length > 0 && waypointCount > 0) {
           const step = Math.max(1, Math.floor(pts.length / (waypointCount + 1)));
           for (let i = 1; i <= waypointCount; i++) {
             const pt = pts[i * step];
-            if (pt) waypoints.push({ location: toLatLng(pt), stopover: false }); // 'stopover: false' means "via point", pass through without strictly breaking the route into legs
+            if (pt) waypoints.push({ location: toLatLng(pt), stopover: false });
           }
         }
 
@@ -195,63 +198,42 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
             if (status === window.google.maps.DirectionsStatus.OK) {
               setDirectionsCache((prev) => ({
                 ...prev,
-                [routeKey]: { result, originalPath: route.path, signature: path + (simWaypoints ? JSON.stringify(simWaypoints) : '') }
+                [routeKey]: { result, originalPath: route.path, signature: cacheKey }
               }));
             } else if (status === window.google.maps.DirectionsStatus.ZERO_RESULTS && waypointCount > 0) {
               console.warn(`Waypoints too strict for ${routeKey}, retrying with fewer points...`);
-              tryFetchRoute(0); // Noktalar tamamen hatalıysa sıfır nokta (en azından dümdüz gitsin)
+              tryFetchRoute(0);
             } else if (status === window.google.maps.DirectionsStatus.REQUEST_DENIED) {
               console.error('Google Maps Directions API is NOT enabled! Please enable it in Google Cloud Console.');
-              alert('DİKKAT: Google Maps "Directions API" hesabınızda kapalı! Yolları takip eden navigasyon çizgisi için Google Cloud paneline girip "Directions API" yi aktifleştirmeniz gerekmektedir.');
+              alert('DİKKAT: Google Maps "Directions API" hesabınızda kapalı!');
             }
           }
         );
       };
 
-      tryFetchRoute(3); // Cut down to 3 major anchor points. With the new sweeping 35% hazard barrier buffer in the backend, Google Maps can effortlessly trace natural broad roads without side-alley zigzags or clipping the visuals!
+      tryFetchRoute(3);
     });
-  }, [routeData, directionsCache, isLoaded]);
+  }, [fleetRoutes, directionsCache, isLoaded]);
 
   // Dispatch animation preparation
   useEffect(() => {
     if (!dispatchActive) {
-      setAnimPath([]);
+      setAnimPaths({});
       return;
     }
     
-    // Feature: Helicopters ignore roads and fly straight to the target
-    if (simVehicleType === 'heli') {
-      // Fly directly from the active command/military base to the target
-      const baseSite = scenario.sites.find(s => s.role === 'military' || s.role === 'command');
-      const targetSite = scenario.sites.find(s => s.role === 'target');
-      
-      const startP = toLatLng(baseSite.coords);
-      const endP = toLatLng(targetSite.coords);
-      
-      // Interpolate points for a smooth flight animation
-      const steps = 1500;
-      const path = [];
-      for(let i=0; i<=steps; i++) {
-        path.push({
-          lat: startP.lat + (endP.lat - startP.lat) * (i/steps),
-          lng: startP.lng + (endP.lng - startP.lng) * (i/steps),
-        });
+    let newPaths = {};
+    fleetRoutes.forEach(fleetEntry => {
+      const cached = directionsCache[fleetEntry.id];
+      if (cached && cached.result.routes[0]) {
+        newPaths[fleetEntry.id] = cached.result.routes[0].overview_path;
+      } else if (fleetEntry.route.path) {
+        newPaths[fleetEntry.id] = toLatLngPath(fleetEntry.route.path);
       }
-      setAnimPath(path);
-      return;
-    }
+    });
 
-    const cached = directionsCache[activeRouteKey];
-    if (cached) {
-      // Directions API returning a beautiful overview path
-      setAnimPath(cached.result.routes[0].overview_path);
-    } else if (activeRoute?.path) {
-      // Fallback path
-      setAnimPath(toLatLngPath(activeRoute.path));
-    } else {
-      setAnimPath([]);
-    }
-  }, [dispatchActive, activeRouteKey, directionsCache, activeRoute, simVehicleType, scenario]);
+    setAnimPaths(newPaths);
+  }, [dispatchActive, fleetRoutes, directionsCache]);
 
   // Keep a ref of the scenario to avoid dependency cycle interval resets
   const scenarioRef = useRef(scenario);
@@ -261,48 +243,48 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
   }, [scenario]);
 
   useEffect(() => {
-    if (animPath && animPath.length > 0) {
+    const pathsArray = Object.values(animPaths);
+    if (pathsArray.length > 0) {
       setDispatchIndex(0);
-      setVehicleHeading(0);
     }
-  }, [animPath]);
+  }, [animPaths]);
 
   useEffect(() => {
-    if (!animPath || animPath.length === 0) return undefined;
+    const pathsArray = Object.values(animPaths);
+    if (pathsArray.length === 0) return undefined;
 
     const interval = window.setInterval(() => {
       setDispatchIndex((prevIndex) => {
-        let index = prevIndex;
+        let allDone = true;
         
         if (simVehicleDir === -1) {
-          if (index <= 0) {
+          const nextIndex = prevIndex - 1;
+          if (nextIndex <= 0) {
             window.clearInterval(interval);
-            setTimeout(() => { if (onVehicleReturn) onVehicleReturn() }, 0);
+            setTimeout(() => { if (onAllVehiclesReturn) onAllVehiclesReturn() }, 0);
             return 0; // Snap to exact 0
           }
-          index -= 1;
+          return nextIndex;
         } else {
-          if (index >= animPath.length - 1) {
-            window.clearInterval(interval);
-            setTimeout(() => { if (onVehicleArrival) onVehicleArrival() }, 0);
-            return animPath.length - 1; // Snap to final element
+          const nextIndex = prevIndex + 1;
+          for (const path of pathsArray) {
+             if (nextIndex < path.length - 1) {
+                allDone = false;
+             }
           }
-          index += 1;
+          if (allDone) {
+            window.clearInterval(interval);
+            setTimeout(() => { if (onAllVehiclesArrival) onAllVehiclesArrival() }, 0);
+            return Math.max(...pathsArray.map(p => p.length - 1)); // Freeze all at ends
+          }
+          
+          return nextIndex;
         }
-        
-        // Calculate rotation towards next ping
-        const p1 = animPath[index];
-        const p2 = simVehicleDir === -1 ? animPath[index - 1] : animPath[index + 1];
-        if (p1 && p2) {
-          setVehicleHeading(computeHeading(p1, p2));
-        }
-
-        return index;
       });
     }, 150); // Speed optimized for road curve smoothing
 
     return () => window.clearInterval(interval);
-  }, [animPath, simVehicleDir]);
+  }, [animPaths, simVehicleDir]);
 
   if (!isLoaded) {
     return (
@@ -395,48 +377,46 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
 
         {/* Dangerous cells kapalı - Harita temizliği için */}
 
-        {/* Routes */}
-        {routeData?.routes &&
-          Object.entries(routeData.routes)
-            .filter(([, route]) => Boolean(route))
-            .map(([routeKey, route]) => {
-              const style = ROUTE_STYLES[routeKey] || ROUTE_STYLES.balanced;
-              const isActive = routeKey === activeRouteKey;
-              const cached = directionsCache[routeKey];
+        {/* Fleet Routes */}
+        {fleetRoutes.map((fleetEntry) => {
+          const routeKey = fleetEntry.id;
+          const route = fleetEntry.route;
+          if (!route) return null;
+          
+          const cached = directionsCache[routeKey];
+          
+          if (cached) {
+            return (
+              <DirectionsRenderer
+                key={`directions-${routeKey}`}
+                directions={cached.result}
+                options={{
+                  polylineOptions: {
+                    strokeColor: '#22c55e', 
+                    strokeWeight: 5,
+                    strokeOpacity: 0.8,
+                    zIndex: 10,
+                  },
+                  suppressMarkers: true,
+                  preserveViewport: true,
+                }}
+              />
+            );
+          }
 
-              if (cached) {
-                return (
-                  <DirectionsRenderer
-                    key={`directions-${routeKey}`}
-                    directions={cached.result}
-                    options={{
-                      polylineOptions: {
-                        strokeColor: style.strokeColor,
-                        strokeWeight: isActive ? style.strokeWeight + 1 : Math.max(2, style.strokeWeight - 2),
-                        strokeOpacity: isActive ? style.strokeOpacity : 0.28,
-                        zIndex: isActive ? 10 : 1,
-                      },
-                      suppressMarkers: true,
-                      preserveViewport: true,
-                    }}
-                  />
-                );
-              }
-
-              // Fallback to straight lines while fetching
-              return (
-                <Polyline
-                  key={`poly-${routeKey}`}
-                  path={toLatLngPath(route.path)}
-                  options={{
-                    strokeColor: style.strokeColor,
-                    strokeWeight: isActive ? style.strokeWeight : Math.max(2, style.strokeWeight - 2),
-                    strokeOpacity: isActive ? style.strokeOpacity : 0.28,
-                    zIndex: isActive ? 10 : 1,
-                  }}
-                />
-              );
-            })}
+          return (
+            <Polyline
+              key={`poly-${routeKey}`}
+              path={toLatLngPath(route.path)}
+              options={{
+                strokeColor: '#22c55e',
+                strokeWeight: 4,
+                strokeOpacity: 0.6,
+                zIndex: 10,
+              }}
+            />
+          );
+        })}
 
         {/* Site markers */}
         {scenario?.sites?.map((site) => (
@@ -457,30 +437,45 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           </Marker>
         ))}
 
-        {/* Dispatch unit */}
-        {dispatchActive && animPath[dispatchIndex] && (
-          <Marker
-            position={animPath[dispatchIndex]}
-            icon={simVehicleType === 'heli' ? {
-              path: 'M17.42 12.06L16 11V6H14L10 9H3C2.45 9 2 9.45 2 10V14C2 14.55 2.45 15 3 15H10L14 18V13L16 12V16L18 16.5V13.5L20.5 14L22 12L17.42 12.06Z M12 3H14V5H12V3Z M12 19H14V21H12V19Z M2 3H10V5H2V3Z', 
-              fillColor: '#0ea5e9',
-              fillOpacity: 1,
-              scale: 1.1,
-              rotation: vehicleHeading,
-              anchor: new window.google.maps.Point(12, 12),
-            } : {
-              // The top-down Google arrow behaves perfectly with native 360-degree rotation paths
-              path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-              fillColor: '#22c55e',
-              fillOpacity: 1,
-              scale: 5,
-              strokeColor: '#000000',
-              strokeWeight: 1.5,
-              rotation: vehicleHeading, 
-            }}
-            zIndex={100}
-          />
-        )}
+        {/* Fleet Dispatch Units */}
+        {dispatchActive && Object.entries(animPaths).map(([id, path]) => {
+          if (!path || path.length === 0) return null;
+          
+          const clampedIndex = Math.min(Math.max(0, dispatchIndex), path.length - 1);
+          const p1 = path[clampedIndex];
+          if (!p1) return null;
+          
+          let heading = 0;
+          if (simVehicleDir === -1 && clampedIndex > 0) {
+            heading = computeHeading(p1, path[clampedIndex - 1]);
+          } else if (simVehicleDir === 1 && clampedIndex < path.length - 1) {
+            heading = computeHeading(p1, path[clampedIndex + 1]);
+          } else {
+             const fallbackP1 = path[Math.max(0, clampedIndex - 1)];
+             const fallbackP2 = path[Math.min(path.length - 1, clampedIndex + 1)];
+             if (fallbackP1 && fallbackP2) {
+                 heading = computeHeading(fallbackP1, fallbackP2);
+                 if (simVehicleDir === -1) heading = (heading + 180) % 360;
+             }
+          }
+
+          return (
+            <Marker
+              key={`vehicle-${id}`}
+              position={p1}
+              icon={{
+                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                fillColor: '#22c55e',
+                fillOpacity: 1,
+                scale: 5,
+                strokeColor: '#000000',
+                strokeWeight: 1.5,
+                rotation: heading, 
+              }}
+              zIndex={100}
+            />
+          );
+        })}
       </GoogleMap>
 
       <div className="map-legend">

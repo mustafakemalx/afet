@@ -31,26 +31,22 @@ function formatPercent(value) {
 export default function Sidebar({
   scenarios,
   selectedScenario,
-  selectedStartSiteId,
-  selectedEndSiteId,
   onScenarioSelect,
-  onStartChange,
-  onEndChange,
   onRefresh,
   routeData,
-  dispatchActive,
-  setDispatchActive,
   theme,
   setTheme,
   mapStyle,
   setMapStyle,
+  dispatchActive,
+  setDispatchActive,
   isRouting,
   isOffline,
   toggleOffline,
   dispatchStatus,
   setDispatchStatus,
   vehicleDir,
-  setVehicleDir
+  setVehicleDir,
 }) {
   return (
     <aside className="sidebar">
@@ -129,50 +125,10 @@ export default function Sidebar({
           <section className="panel">
             <div className="section-title">
               <Map size={16} />
-              <span>Görev noktası seçimi</span>
+              <span>Otonom Filo Operasyonları</span>
             </div>
 
-            <label className="field-label" htmlFor="start-site">
-              Çıkış noktası
-            </label>
-            <select
-              id="start-site"
-              className="select-input"
-              value={selectedStartSiteId}
-              onChange={(event) => onStartChange(event.target.value)}
-            >
-              {selectedScenario.sites
-                .filter((site) => site.role !== 'target')
-                .map((site) => (
-                <option key={site.id} value={site.id} disabled={site.id === selectedEndSiteId}>
-                  {site.label}
-                </option>
-              ))}
-            </select>
-
-            <label className="field-label" htmlFor="end-site">
-              Hedef noktası
-            </label>
-            <select
-              id="end-site"
-              className="select-input"
-              value={selectedEndSiteId}
-              onChange={(event) => onEndChange(event.target.value)}
-            >
-              {selectedScenario.sites
-                .filter((site) => site.role === 'target')
-                .map((site) => (
-                <option key={site.id} value={site.id} disabled={site.id === selectedStartSiteId}>
-                  {site.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="action-row" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button className="btn primary" type="button" onClick={onRefresh} disabled={isRouting}>
-                <RefreshCw size={16} className={isRouting ? 'spin' : ''} />
-                Uydu taramayı yenile
-              </button>
+            <div className="action-row" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
               <button
                 className={`btn ${isOffline ? 'danger' : 'secondary'}`}
                 type="button"

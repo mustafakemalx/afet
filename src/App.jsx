@@ -12,13 +12,19 @@ function getSite(scenario, siteId) {
   return scenario?.sites?.find((site) => site.id === siteId) || null;
 }
 
+const haversineDistance = (p1, p2) => {
+    const R = 6371; 
+    const dLat = (p2[0] - p1[0]) * Math.PI / 180;
+    const dLon = (p2[1] - p1[1]) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1[0] * Math.PI / 180) * Math.cos(p2[0] * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+};
+
 function App() {
   const [scenarios, setScenarios] = useState([]);
   const [selectedScenario, setSelectedScenario] = useState(null);
-  const [selectedStartSiteId, setSelectedStartSiteId] = useState('');
-  const [selectedEndSiteId, setSelectedEndSiteId] = useState('');
+  const [fleetRoutes, setFleetRoutes] = useState([]);
   const [routeData, setRouteData] = useState(null);
-  const [activeRouteKey, setActiveRouteKey] = useState('safest');
   const [dispatchActive, setDispatchActive] = useState(false);
   const [scanPulse, setScanPulse] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -83,9 +89,7 @@ function App() {
           const firstScenario = incomingScenarios[0];
           setActiveInfoWindow(null);
           setSelectedScenario(firstScenario);
-          setSelectedStartSiteId(firstScenario.defaultRoute.startSiteId);
-          setSelectedEndSiteId(firstScenario.defaultRoute.endSiteId);
-          await fetchRoute(firstScenario, firstScenario.defaultRoute.startSiteId, firstScenario.defaultRoute.endSiteId, false);
+          await fetchFleetRoutes(firstScenario, false);
         }
       } catch (error) {
         console.error('Failed to load scenarios', error);
@@ -98,16 +102,8 @@ function App() {
     loadScenarios();
   }, []);
 
-  const fetchRoute = async (scenario, startSiteId, endSiteId, withScanAnimation = true) => {
-    if (!scenario) {
-      return;
-    }
-
-    const startSite = getSite(scenario, startSiteId);
-    const endSite = getSite(scenario, endSiteId);
-    if (!startSite || !endSite) {
-      return;
-    }
+  const fetchFleetRoutes = async (scenario, withScanAnimation = true) => {
+    if (!scenario || !scenario.sites) return;
 
     setIsRouting(true);
     setDispatchActive(false);
@@ -116,32 +112,66 @@ function App() {
 
     if (withScanAnimation) {
       setScanPulse(true);
-      addNotification('Yerli uydu taraması ve rota yeniden hesaplanıyor...', 'info');
-    } else {
-      addNotification('Güvenli rota yeniden oluşturuluyor...', 'info');
+      addNotification('Otonom filo rotaları yapay zeka tarafından hesaplanıyor...', 'info');
     }
 
     try {
-      const response = await axios.post(`${API_BASE}/api/route`, {
-        scenarioId: scenario.id,
-        start: startSite.coords,
-        end: endSite.coords,
-        includeContingency: true,
+      const targets = scenario.sites.filter(s => s.role === 'target');
+      const bases = scenario.sites.filter(s => s.role !== 'target');
+
+      const requests = targets.map((target, idx) => {
+        let nearestBase = bases[0];
+        let minD = Infinity;
+        bases.forEach(b => {
+           let d = haversineDistance(b.coords, target.coords);
+           if (d < minD) { minD = d; nearestBase = b; }
+        });
+        
+        return axios.post(`${API_BASE}/api/route`, {
+          scenarioId: scenario.id,
+          start: nearestBase.coords,
+          end: target.coords,
+          includeContingency: false,
+          mode: 'safest_only'
+        }).then(res => ({
+           id: `fleet-${idx}`,
+           startPos: nearestBase.coords,
+           endPos: target.coords,
+           route: res.data.routes.safest
+        }));
       });
 
-      setRouteData(response.data);
+      const results = await Promise.all(requests);
+      setFleetRoutes(results);
+
+      // Sythensize the first response metadata and aggregate distances to pass to Dashboard.jsx smoothly
+      const primaryResponse = await axios.post(`${API_BASE}/api/route`, {
+         scenarioId: scenario.id,
+         start: results[0].startPos,
+         end: results[0].endPos,
+         includeContingency: true,
+         mode: 'safest_only'
+      });
       
-      const newScenarioState = response.data.scenario;
+      const totalDistance = results.reduce((sum, r) => sum + r.route.distanceKm, 0);
+      const maxEta = Math.max(...results.map(r => r.route.etaMinutes));
+
+      const unifiedData = {
+         ...primaryResponse.data,
+         routes: {
+           safest: { ...primaryResponse.data.routes.safest, distanceKm: totalDistance, etaMinutes: maxEta }
+         }
+      };
+
+      setRouteData(unifiedData);
+      
+      const newScenarioState = primaryResponse.data.scenario;
       if (scenario && scenario.sites) {
         newScenarioState.sites = scenario.sites;
       }
       setSelectedScenario(newScenarioState);
       
-      setActiveRouteKey(response.data.analysis?.recommendedMode || 'safest');
-      addNotification('Görev koridoru hazır. En güvenli rota aktif.', 'success');
-      if (response.data.scenario.stats.criticalCount >= 2) {
-         setTimeout(() => addNotification(`${response.data.scenario.city} görev alanında kritik bulgular var!`, 'danger'), 800);
-      }
+      addNotification('4 Araçlık Filo Koridoru hazır. En güvenli rotalar aktif.', 'success');
     } catch (error) {
       console.error('Route request failed', error);
       addNotification('Rota hesaplanamadı veya AFAD sunucusuna ulaşılamadı.', 'danger');
@@ -158,44 +188,20 @@ function App() {
 
   const handleScenarioSelect = (scenarioId) => {
     const scenario = scenarios.find((entry) => entry.id === scenarioId);
-    if (!scenario) {
-      return;
-    }
-
-    const nextStart = scenario.defaultRoute.startSiteId;
-    const nextEnd = scenario.defaultRoute.endSiteId;
+    if (!scenario) return;
 
     setSelectedScenario(scenario);
-    setSelectedStartSiteId(nextStart);
-    setSelectedEndSiteId(nextEnd);
-    setDispatchActive(false); // Immediately stop vehicle logic when swapping cities
+    setDispatchActive(false);
     setDispatchStatus('idle');
     setVehicleDir(1);
     setRouteData(null);
+    setFleetRoutes([]);
     addNotification(`${scenario.city} görev alanı yükleniyor...`, 'neutral');
-    fetchRoute(scenario, nextStart, nextEnd, true);
+    fetchFleetRoutes(scenario, true);
   };
 
   const handleRefresh = () => {
-    fetchRoute(selectedScenario, selectedStartSiteId, selectedEndSiteId, true);
-  };
-
-  const handleRouteUpdate = (startSiteId = selectedStartSiteId, endSiteId = selectedEndSiteId) => {
-    fetchRoute(selectedScenario, startSiteId, endSiteId, false);
-  };
-
-  const handleStartChange = (siteId) => {
-    setSelectedStartSiteId(siteId);
-    const siteLabel = getSite(selectedScenario, siteId)?.label;
-    addNotification(`Çıkış noktası ${siteLabel} olarak güncellendi.`, 'neutral');
-    handleRouteUpdate(siteId, selectedEndSiteId);
-  };
-
-  const handleEndChange = (siteId) => {
-    setSelectedEndSiteId(siteId);
-    const siteLabel = getSite(selectedScenario, siteId)?.label;
-    addNotification(`Varış hedefi ${siteLabel} olarak güncellendi.`, 'neutral');
-    handleRouteUpdate(selectedStartSiteId, siteId);
+    fetchFleetRoutes(selectedScenario, true);
   };
 
   if (loading) {
@@ -219,11 +225,7 @@ function App() {
       <Sidebar
         scenarios={scenarios}
         selectedScenario={selectedScenario}
-        selectedStartSiteId={selectedStartSiteId}
-        selectedEndSiteId={selectedEndSiteId}
         onScenarioSelect={handleScenarioSelect}
-        onStartChange={handleStartChange}
-        onEndChange={handleEndChange}
         onRefresh={handleRefresh}
         routeData={routeData}
         dispatchActive={dispatchActive}
@@ -345,24 +347,23 @@ function App() {
         <section className="map-stage">
           <MapComponent
             scenario={selectedScenario}
-            routeData={routeData}
+            fleetRoutes={fleetRoutes}
             mapStyle={mapStyle}
-            activeRouteKey={activeRouteKey}
             dispatchActive={dispatchActive}
             activeInfoWindow={activeInfoWindow}
             setActiveInfoWindow={setActiveInfoWindow}
             simVehicleType={'truck'}
             simVehicleDir={vehicleDir}
             isSimulation={false}
-            onVehicleArrival={() => {
+            onAllVehiclesArrival={() => {
               setDispatchStatus('arrived');
-              addNotification('Ekip hedefe başarıyla ulaştı ve güvenliği sağladı.', 'success');
+              addNotification('Tüm ekipler hedeflere başarıyla ulaştı ve güvenliği sağladı.', 'success');
             }}
-            onVehicleReturn={() => {
+            onAllVehiclesReturn={() => {
               setDispatchStatus('idle');
               setDispatchActive(false);
               setVehicleDir(1);
-              addNotification('Ekip güvenli bir biçimde komuta merkezine geri döndü.', 'success');
+              addNotification('Tüm filo güvenli bir biçimde komuta merkezine geri döndü.', 'success');
             }}
           />
           <Dashboard
