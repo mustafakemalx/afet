@@ -323,12 +323,6 @@ function App() {
               <h1>{selectedScenario?.name}</h1>
               <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
             </div>
-            <button className="base-btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem' }} onClick={() => {
-              setDispatchActive(true);
-            }}>
-              <Truck size={20} />
-              Saha Ekiplerini Sevk Et
-            </button>
           </div>
         </section>
 
