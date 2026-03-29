@@ -178,7 +178,7 @@ function App() {
 
     // Phase 1: Departure
     if (scenarioTime === 1 && simState.phase < 1) {
-      setSimState({ text: '1. EKİP AFET BÖLGESİNE SEVK EDİLİYOR', phase: 1, vehicleType: 'truck' });
+      setSimState({ text: '1. EKİP AFET BÖLGESİNE SEVK EDİLİYOR', phase: 1, vehicleType: 'truck', vehicleDir: 1 });
       addNotification('SİMÜLASYON: Serinyol Jandarma Eğitim birliğinden kurtarma aracı, 8. Komando Tugayına destek için hareket etti.', 'info');
       setSelectedStartSiteId('military-2');
       setSelectedEndSiteId('military-1');
@@ -194,20 +194,27 @@ function App() {
 
     // Phase 2.5: Dynamic AI Detour (Bending around the hazard)
     if (scenarioTime === 13 && simState.phase < 2.5) {
-      setSimState({ text: 'YAPAY ZEKA YENİ ROTA ÇİZİYOR. KAVİSLİ ÇEVRE YOLU.', phase: 2.5, vehicleType: 'truck', waypoints: [[36.2160, 36.1200]] }); // Force curve to the far West
+      setSimState({ text: 'YAPAY ZEKA YENİ ROTA ÇİZİYOR. KAVİSLİ ÇEVRE YOLU.', phase: 2.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [[36.2160, 36.1200]] }); // Force curve to the far West
       addNotification('SİMÜLASYON: Yapay Zeka enkaz alanından (kırmızı bölge) kaçınacak alternatif bir "Çevre Yolu Detour" çizdi.', 'success');
       setDispatchActive(true); // Truck moves again!
       // This will force the map to redraw with simWaypoints
     }
 
-    // Phase 3: Team Swap / Reroute
-    if (scenarioTime === 25 && simState.phase < 3) {
-      setSimState({ text: 'YENİ ROTA DA YIKILDI: AFAD\'DAN EKİP ÇIKIYOR', phase: 3, vehicleType: 'truck', waypoints: [] });
-      addNotification('SİMÜLASYON: 2. büyük artçı çevre yolunu da tahrip etti. 1. Ekip çekiliyor. Yapay Zeka AFAD Kriz Merkezinden (cmd) 2. Ekibi sevk ediyor!', 'warning');
-      setSelectedStartSiteId('cmd'); // Swap to Team 2 Base
+    // Phase 3: Forced Retreat
+    if (scenarioTime === 24 && simState.phase < 3) {
+      setSimState({ text: 'YENİ ROTA DA YIKILDI: 1. EKİP GERİ ÇEKİLİYOR!', phase: 3, vehicleType: 'truck', vehicleDir: -1, waypoints: [[36.2160, 36.1200]] });
+      addNotification('SİMÜLASYON: 2. büyük artçı çevre yolunu da tahrip etti. 1. Ekip güvenli alana dönmek için TERS YÖNDE (Geri Vites) hareket ediyor!', 'danger');
+      setDispatchActive(true); // It moves backwards!
+    }
+    
+    // Phase 3.5: Team 2 Swap
+    if (scenarioTime === 28 && simState.phase < 3.5) {
+      setSimState({ text: 'DEFNE HASTANESİNDEN 2. EKİP ÇIKIYOR!', phase: 3.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
+      addNotification('SİMÜLASYON: Yapay Zeka komutayı devretti. Defne hastanesinden (field-2) 2. Ekibi yola çıkardı!', 'warning');
+      setSelectedStartSiteId('field-2'); // Swap to Team 2 Base
       setDispatchActive(false);
     }
-    if (scenarioTime === 27 && simState.phase === 3) {
+    if (scenarioTime === 30 && (simState.phase === 3.5 || simState.phase === 3)) {
       setDispatchActive(true); // Team 2 starts moving
     }
 
@@ -220,7 +227,7 @@ function App() {
 
     // Phase 5: Air Drop Resolution
     if (scenarioTime === 45 && simState.phase < 5) {
-      setSimState({ text: 'HAVA YARDIMI (AIR-DROP) PROTOKOLÜ: İHA AKTİF', phase: 5, vehicleType: 'heli' });
+      setSimState({ text: 'HAVA YARDIMI (AIR-DROP) PROTOKOLÜ: İHA AKTİF', phase: 5, vehicleType: 'heli', vehicleDir: 1 });
       addNotification('SİMÜLASYON: Yapay Zeka kara müdahalesinin imkansız olduğunu saptadı. Kargo İHA sistemi üzerinden havadan intikal başladı!', 'success');
       setDispatchActive(true); // Restart vehicle, but this time it will fly
     }
@@ -428,7 +435,7 @@ function App() {
                 setDispatchActive(false);
                 setSelectedStartSiteId('military-2');
                 setSelectedEndSiteId('military-1');
-                setSimState({ text: 'Simülasyon Başlıyor...', phase: 0, vehicleType: 'truck' });
+                setSimState({ text: 'Simülasyon Başlıyor...', phase: 0, vehicleType: 'truck', vehicleDir: 1 });
               }}>
                 <Orbit size={20} className="spin" />
                 6 Şubat Senaryosunu Başlat
@@ -452,6 +459,7 @@ function App() {
             activeInfoWindow={activeInfoWindow}
             setActiveInfoWindow={setActiveInfoWindow}
             simVehicleType={simState.vehicleType}
+            simVehicleDir={simState.vehicleDir || 1}
             isSimulation={isSimulation}
             simWaypoints={simState.waypoints}
           />

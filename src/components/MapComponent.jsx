@@ -96,7 +96,7 @@ function computeHeading(p1, p2) {
   return (heading + 360) % 360;
 }
 
-export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints }) {
+export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints, simVehicleDir }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [vehicleHeading, setVehicleHeading] = useState(0);
   const [directionsCache, setDirectionsCache] = useState({});
@@ -241,29 +241,42 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
   useEffect(() => {
     if (!animPath || animPath.length === 0) return undefined;
 
-    let index = 0;
-    setDispatchIndex(0);
-    setVehicleHeading(0);
+    // Do NOT reset index to 0 if we are reversing! Start from current index.
+    let index = simVehicleDir === -1 ? dispatchIndex : 0;
+    if (simVehicleDir !== -1) {
+      setDispatchIndex(0);
+      setVehicleHeading(0);
+    }
 
     const interval = window.setInterval(() => {
-      if (index >= animPath.length - 1) {
-        window.clearInterval(interval);
-        return;
+      if (simVehicleDir === -1) {
+        if (index <= 0) {
+          window.clearInterval(interval);
+          return;
+        }
+        index -= 1;
+      } else {
+        if (index >= animPath.length - 1) {
+          window.clearInterval(interval);
+          return;
+        }
+        index += 1;
       }
       
       // Calculate rotation towards next ping
       const p1 = animPath[index];
-      const p2 = animPath[index + 1];
+      // If going backwards, the "next" point is the one behind us (index - 1)
+      // Wait, if we are at index and heading to index-1, we look towards index-1.
+      const p2 = simVehicleDir === -1 ? animPath[index - 1] : animPath[index + 1];
       if (p1 && p2) {
         setVehicleHeading(computeHeading(p1, p2));
       }
 
-      index += 1;
       setDispatchIndex(index);
     }, 150); // Speed optimized for road curve smoothing
 
     return () => window.clearInterval(interval);
-  }, [animPath]);
+  }, [animPath, simVehicleDir]);
 
   if (!isLoaded) {
     return (
