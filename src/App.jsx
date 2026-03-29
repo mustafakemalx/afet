@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { AlertTriangle, Orbit, Radar, WifiOff, Bell, BellRing, Info, CheckCircle, X, RefreshCw, Trash2, BookOpen } from 'lucide-react';
+import { AlertTriangle, Orbit, Radar, WifiOff, Bell, BellRing, Info, CheckCircle, X, RefreshCw, Trash2, BookOpen, Truck } from 'lucide-react';
 import MapComponent from './components/MapComponent';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -79,8 +79,6 @@ function App() {
 
         if (incomingScenarios.length > 0) {
           const firstScenario = incomingScenarios[0];
-          setScenarioTime(0);
-          setVisibleHazards([]);
           setActiveInfoWindow(null);
           setSelectedScenario(firstScenario);
           setSelectedStartSiteId(firstScenario.defaultRoute.startSiteId);
