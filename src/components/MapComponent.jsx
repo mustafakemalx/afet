@@ -197,10 +197,43 @@ export default function MapComponent({
           },
           (result, status) => {
             if (status === window.google.maps.DirectionsStatus.OK) {
-              setDirectionsCache((prev) => ({
-                ...prev,
-                [routeKey]: { result, originalPath: route.path, signature: cacheKey }
-              }));
+              const path = result.routes[0].overview_path;
+              let breached = false;
+              
+              if (scenario && scenario.hazards) {
+                 for (const pt of path) {
+                    if (breached) break;
+                    for (const hazard of scenario.hazards) {
+                       if (haversineDistance({lat: pt.lat(), lng: pt.lng()}, hazard.center) <= hazard.radiusKm * 1.15) {
+                          breached = true;
+                          break;
+                       }
+                    }
+                 }
+              }
+
+              if (breached) {
+                 // Dynamic Heli Override - Force air support and create a clean linearly interpolated sky vector
+                 const steps = 120;
+                 const flightPath = [];
+                 const pStart = path[0];
+                 const pEnd = path[path.length - 1];
+                 for (let i = 0; i <= steps; i++) {
+                    flightPath.push(new window.google.maps.LatLng(
+                       pStart.lat() + (pEnd.lat() - pStart.lat()) * (i/steps),
+                       pStart.lng() + (pEnd.lng() - pStart.lng()) * (i/steps)
+                    ));
+                 }
+                 setDirectionsCache((prev) => ({
+                   ...prev,
+                   [routeKey]: { isHeliOverride: true, flightPath, signature: cacheKey }
+                 }));
+              } else {
+                 setDirectionsCache((prev) => ({
+                   ...prev,
+                   [routeKey]: { result, originalPath: route.path, signature: cacheKey }
+                 }));
+              }
             } else if (status === window.google.maps.DirectionsStatus.ZERO_RESULTS && waypointCount > 0) {
               console.warn(`Waypoints too strict for ${routeKey}, retrying with fewer points...`);
               tryFetchRoute(0);
@@ -226,7 +259,9 @@ export default function MapComponent({
     let newPaths = {};
     fleetRoutes.forEach(fleetEntry => {
       const cached = directionsCache[fleetEntry.id];
-      if (cached && cached.result.routes[0]) {
+      if (cached && cached.isHeliOverride) {
+        newPaths[fleetEntry.id] = cached.flightPath;
+      } else if (cached && cached.result?.routes?.[0]) {
         newPaths[fleetEntry.id] = cached.result.routes[0].overview_path;
       } else if (fleetEntry.route.path) {
         newPaths[fleetEntry.id] = toLatLngPath(fleetEntry.route.path);
@@ -384,11 +419,14 @@ export default function MapComponent({
           const route = fleetEntry.route;
           if (!route) return null;
           
-          if (route.vehicleType === 'heli') {
+          const cached = directionsCache[routeKey];
+          const isHeli = route.vehicleType === 'heli' || cached?.isHeliOverride;
+          
+          if (isHeli) {
              return (
               <Polyline
                 key={`poly-${routeKey}`}
-                path={toLatLngPath(route.path)}
+                path={cached?.flightPath || toLatLngPath(route.path)}
                 options={{
                   strokeColor: '#0ea5e9', // Cyan Gök Mavisi
                   strokeOpacity: 0, // Solid line hidden
@@ -402,10 +440,8 @@ export default function MapComponent({
               />
              );
           }
-
-          const cached = directionsCache[routeKey];
           
-          if (cached) {
+          if (cached && cached.result) {
             return (
               <DirectionsRenderer
                 key={`directions-${routeKey}`}
@@ -463,7 +499,7 @@ export default function MapComponent({
           
           const originalFleetEntry = fleetRoutes.find(f => f.id === id);
           if (!originalFleetEntry) return null;
-          const isHeli = originalFleetEntry.route.vehicleType === 'heli';
+          const isHeli = originalFleetEntry.route.vehicleType === 'heli' || directionsCache[id]?.isHeliOverride;
 
           const clampedIndex = Math.min(Math.max(0, dispatchIndex), path.length - 1);
           const p1 = path[clampedIndex];
