@@ -428,9 +428,47 @@ function runAStar(mode, layout, start, end, primaryPathKeys = new Set()) {
 function buildResponseScenario(scenario) {
   const summary = summarizeScenario(scenario);
 
+  // Generate 4 Safe Random Target Locations dynamically for each scenario request
+  const dynamicSites = [];
+  const minLat = Math.min(scenario.bounds[0][0], scenario.bounds[1][0]);
+  const maxLat = Math.max(scenario.bounds[0][0], scenario.bounds[1][0]);
+  const minLon = Math.min(scenario.bounds[0][1], scenario.bounds[1][1]);
+  const maxLon = Math.max(scenario.bounds[0][1], scenario.bounds[1][1]);
+
+  let safetyTries = 0;
+  while (dynamicSites.length < 4 && safetyTries < 2000) {
+    safetyTries += 1;
+    const lat = minLat + Math.random() * (maxLat - minLat);
+    const lon = minLon + Math.random() * (maxLon - minLon);
+    const point = [lat, lon];
+    
+    let isSafe = true;
+    for (const h of scenario.hazards) {
+      if (haversineDistance(point, h.center) <= h.radiusKm * 1.1) {
+         isSafe = false;
+         break;
+      }
+    }
+    
+    if (isSafe && !scenario.sites.some((s) => haversineDistance(point, s.coords) < 0.2)) {
+       dynamicSites.push({
+         id: `rand-target-${dynamicSites.length + 1}`,
+         role: 'target',
+         label: `Rastgele Hedef ${dynamicSites.length + 1}`,
+         coords: point
+       });
+    }
+  }
+
+  // Preserve non-target sites (like AFAD centers, command logs) and append dynamic targets
+  const combinedSites = [
+    ...scenario.sites.filter(s => s.role !== 'target'),
+    ...dynamicSites
+  ];
+
   return {
     ...summary,
-    sites: scenario.sites,
+    sites: combinedSites,
     hazards: scenario.hazards.map((hazard) => ({
       ...hazard,
       color: HAZARD_META[hazard.type]?.color,
