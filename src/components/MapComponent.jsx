@@ -255,11 +255,14 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
     }
   }, [dispatchActive, activeRouteKey, directionsCache, activeRoute, simVehicleType, scenario]);
 
-  // Keep a ref of the scenario so we don't need to depend on it
+  // Keep a ref of the scenario and collision callback to avoid dependency cycle interval resets
   const scenarioRef = useRef(scenario);
+  const onHazardCollisionRef = useRef(onHazardCollision);
+  
   useEffect(() => {
     scenarioRef.current = scenario;
-  }, [scenario]);
+    onHazardCollisionRef.current = onHazardCollision;
+  }, [scenario, onHazardCollision]);
 
   useEffect(() => {
     if (!animPath || animPath.length === 0) return undefined;
@@ -301,7 +304,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
 
           if (hitHazard) {
             window.clearInterval(interval);
-            if (onHazardCollision) onHazardCollision(hitHazard.id);
+            if (onHazardCollisionRef.current) onHazardCollisionRef.current(hitHazard.id);
             return index; // Vehicle vanishes, stop updating
           }
         }
@@ -312,7 +315,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
 
     // Dependency array EXCLUDES scenario and isSimulation to prevent interval restart teleportation!
     return () => window.clearInterval(interval);
-  }, [animPath, simVehicleDir, onHazardCollision, isSimulation]);
+  }, [animPath, simVehicleDir, isSimulation]);
 
   if (!isLoaded) {
     return (

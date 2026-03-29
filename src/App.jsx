@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { AlertTriangle, Orbit, Radar, WifiOff, Bell, BellRing, Info, CheckCircle, X, RefreshCw, Trash2, BookOpen } from 'lucide-react';
 import MapComponent from './components/MapComponent';
@@ -248,7 +248,7 @@ function App() {
     fetchRoute(scenario, nextStart, nextEnd, true);
   };
 
-  const onHazardCollision = (hazardId) => {
+  const onHazardCollision = useCallback((hazardId) => {
     if (!isSimulation) return;
     
     if (simState.phase === 1) {
@@ -263,7 +263,7 @@ function App() {
       addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Çevre yolu enkazında aracın bağlantısı koptu. Araç kırmızı alanda yok oldu! Görev Devri Hazırlanıyor...', 'danger');
       setDispatchActive(false); // Instant vanish
     }
-  };
+  }, [isSimulation, simState.phase]);
 
   const handleRefresh = () => {
     fetchRoute(selectedScenario, selectedStartSiteId, selectedEndSiteId, true);
