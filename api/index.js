@@ -133,7 +133,8 @@ function scoreCell(cellPoint, scenario) {
       });
     }
 
-    if (distanceKm < hazard.radiusKm * meta.blockFactor * 0.55 && hazard.severity > 0.76) {
+    // Always treat the entire visually defined red circle as an impassable barrier
+    if (distanceKm <= hazard.radiusKm * 1.05) {
       blocked = true;
     }
   });
