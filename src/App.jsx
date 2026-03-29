@@ -217,8 +217,6 @@ function App() {
   }
 
   const alertState = selectedScenario?.stats?.criticalCount >= 2;
-  const activeStart = getSite(selectedScenario, selectedStartSiteId);
-  const activeEnd = getSite(selectedScenario, selectedEndSiteId);
 
   return (
     <div className="app-shell">
