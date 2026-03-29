@@ -184,49 +184,36 @@ function App() {
       setSelectedEndSiteId('military-1');
       setDispatchActive(true);
     }
+    // We move the blockage narrative to be dynamically triggered by the Map collision!
     
-    // Phase 2: First Blockage
-    if (scenarioTime === 10 && simState.phase < 2) {
-      setSimState({ text: 'ARTÇI DEPREM: 1. EKİBİN BAĞLANTISI KOPTU!', phase: 2, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: Kırmızı alandaki artçı sarsıntı aracın üzerine düştü! Aracın sinyali kesildi ve haritadan yok oldu.', 'danger');
-      setDispatchActive(false); // Stop and vanish vehicle completely
-    }
-
     // Phase 2.5: Dynamic AI Detour (Bending around the hazard)
-    if (scenarioTime === 13 && simState.phase < 2.5) {
+    if (scenarioTime === 15 && simState.phase < 2.5) {
       setSimState({ text: 'YAPAY ZEKA YENİ ROTA ÇİZİYOR. KAVİSLİ ÇEVRE YOLU.', phase: 2.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [[36.2160, 36.1200]] }); // Force curve to the far West
       addNotification('SİMÜLASYON: Yapay Zeka enkaz alanından (kırmızı bölge) kaçınacak alternatif bir "Çevre Yolu Detour" çizdi.', 'success');
       setDispatchActive(true); // Truck moves again!
       // This will force the map to redraw with simWaypoints
     }
-
-    // Phase 3: Total Failure on Route 1
-    if (scenarioTime === 24 && simState.phase < 3) {
-      setSimState({ text: 'ÇEVRE YOLU YIKILDI: 1. EKİP GÖREVİ İPTAL!', phase: 3, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
-      addNotification('SİMÜLASYON: Kırmızı çevre yolu enkazında aracın bağlantısı koptu. Araç yok oldu! Görev diğer kışlaya devrediliyor...', 'danger');
-      setDispatchActive(false); // Vehicle vanishes completely
-    }
     
-    // Phase 3.5: Team 2 Swap
-    if (scenarioTime === 28 && simState.phase < 3.5) {
+    // Phase 3.5: Team 2 Swap (After Team 1 vanishes dynamically)
+    if (scenarioTime === 32 && simState.phase < 3.5) {
       setSimState({ text: 'DEFNE HASTANESİNDEN 2. EKİP ÇIKIYOR!', phase: 3.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
       addNotification('SİMÜLASYON: Yapay Zeka komutayı devretti. Defne hastanesinden (field-2) 2. Ekibi yola çıkardı!', 'warning');
       setSelectedStartSiteId('field-2'); // Swap to Team 2 Base
       setDispatchActive(false);
     }
-    if (scenarioTime === 30 && (simState.phase === 3.5 || simState.phase === 3)) {
+    if (scenarioTime === 35 && (simState.phase === 3.5 || simState.phase === 3)) {
       setDispatchActive(true); // Team 2 starts moving
     }
 
     // Phase 4: Total Blockage
-    if (scenarioTime === 40 && simState.phase < 4) {
+    if (scenarioTime === 45 && simState.phase < 4) {
       setSimState({ text: 'BÜYÜK YIKIM: HEDEFE TÜM KARA YOLLARI KOPTU!', phase: 4, vehicleType: 'truck' });
       addNotification('SİMÜLASYON: Komando Tugayını çevreleyen son 3 yol tahrip oldu. Hedef kara ulaşımına kapalı!', 'danger');
       setDispatchActive(false); // Stop vehicle
     }
 
     // Phase 5: Air Drop Resolution
-    if (scenarioTime === 45 && simState.phase < 5) {
+    if (scenarioTime === 50 && simState.phase < 5) {
       setSimState({ text: 'HAVA YARDIMI (AIR-DROP) PROTOKOLÜ: İHA AKTİF', phase: 5, vehicleType: 'heli', vehicleDir: 1 });
       addNotification('SİMÜLASYON: Yapay Zeka kara müdahalesinin imkansız olduğunu saptadı. Kargo İHA sistemi üzerinden havadan intikal başladı!', 'success');
       setDispatchActive(true); // Restart vehicle, but this time it will fly
@@ -265,6 +252,21 @@ function App() {
     setRouteData(null);
     addNotification(`${scenario.city} görev alanı yükleniyor...`, 'neutral');
     fetchRoute(scenario, nextStart, nextEnd, true);
+  };
+
+  const onHazardCollision = (hazardId) => {
+    if (!isSimulation) return;
+    
+    if (simState.phase === 1) {
+      setSimState({ text: 'ARTÇI DEPREM: 1. EKİBİN BAĞLANTISI KOPTU!', phase: 2, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Araç kırmızı tehlilekeli alan sinirine girdigi anda sinyali kesildi ve haritadan yok oldu.', 'danger');
+      setDispatchActive(false); // Instant vanish
+    }
+    else if (simState.phase === 2.5) {
+      setSimState({ text: 'ÇEVRE YOLU YIKILDI: 1. EKİP GÖREVİ İPTAL!', phase: 3, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
+      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Kırmızı çevre yolu enkazında aracın bağlantısı koptu. Araç yok oldu! Görev diğer kışlaya devrediliyor...', 'danger');
+      setDispatchActive(false); // Instant vanish
+    }
   };
 
   const handleRefresh = () => {
@@ -462,6 +464,7 @@ function App() {
             simVehicleDir={simState.vehicleDir || 1}
             isSimulation={isSimulation}
             simWaypoints={simState.waypoints}
+            onHazardCollision={onHazardCollision}
           />
           <Dashboard
             scenario={{ ...selectedScenario, hazards: visibleHazards }}

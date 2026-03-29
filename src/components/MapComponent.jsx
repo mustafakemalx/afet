@@ -96,7 +96,18 @@ function computeHeading(p1, p2) {
   return (heading + 360) % 360;
 }
 
-export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints, simVehicleDir }) {
+function getDistanceKm(p1, p2) {
+  const R = 6371;
+  const dLat = (p2.lat - p1.lat) * (Math.PI/180);
+  const dLon = (p2.lng - p1.lng) * (Math.PI/180);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(p1.lat * (Math.PI/180)) * Math.cos(p2.lat * (Math.PI/180)) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints, simVehicleDir, onHazardCollision }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [vehicleHeading, setVehicleHeading] = useState(0);
   const [directionsCache, setDirectionsCache] = useState({});
@@ -272,11 +283,25 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         setVehicleHeading(computeHeading(p1, p2));
       }
 
+      // Feature: Check for dynamic active hazard collisions!
+      if (isSimulation && scenario?.hazards) {
+        const hitHazard = scenario.hazards.find(h => {
+          const dist = getDistanceKm(p1, {lat: h.center[0], lng: h.center[1]});
+          return dist <= h.radiusKm;
+        });
+
+        if (hitHazard) {
+          window.clearInterval(interval);
+          if (onHazardCollision) onHazardCollision(hitHazard.id);
+          return;
+        }
+      }
+
       setDispatchIndex(index);
     }, 150); // Speed optimized for road curve smoothing
 
     return () => window.clearInterval(interval);
-  }, [animPath, simVehicleDir]);
+  }, [animPath, simVehicleDir, isSimulation, scenario, onHazardCollision]);
 
   if (!isLoaded) {
     return (
