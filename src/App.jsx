@@ -179,23 +179,24 @@ function App() {
     // Phase 1: Departure
     if (scenarioTime === 1 && simState.phase < 1) {
       setSimState({ text: '1. EKİP AFET BÖLGESİNE SEVK EDİLİYOR', phase: 1, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: 8. Komando Tugayından kurtarma aracı ağır yıkım bölgesine hareket etti.', 'info');
-      setSelectedStartSiteId('military-1');
+      addNotification('SİMÜLASYON: Serinyol Jandarma Eğitim birliğinden kurtarma aracı, 8. Komando Tugayına destek için hareket etti.', 'info');
+      setSelectedStartSiteId('military-2');
+      setSelectedEndSiteId('military-1');
       setDispatchActive(true);
     }
     
     // Phase 2: First Blockage
     if (scenarioTime === 10 && simState.phase < 2) {
       setSimState({ text: 'ARTÇI DEPREM: 1. EKİBİN YOLU KAPANDI!', phase: 2, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: Defne Artçısı aracın rotasını (Kuzey Otoyolu) tamamen enkazla kapattı! İlerleyiş durdu.', 'danger');
+      addNotification('SİMÜLASYON: Batı otoyolu merkezli artçı sarsıntı aracın rotasını tamamen kesti! İlerleyiş durdu.', 'danger');
       setDispatchActive(false); // Stop vehicle
     }
 
     // Phase 3: Team Swap / Reroute
     if (scenarioTime === 15 && simState.phase < 3) {
-      setSimState({ text: 'ALTERNATİF ROTA: 2. EKİP SERİNYOL\'DAN ÇIKIYOR', phase: 3, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: Yapay Zeka 1. Ekibi geri çağırıp, engelsiz rotaya en yakın olan Serinyol komutanlığından 2. Ekibi sevk ediyor.', 'success');
-      setSelectedStartSiteId('military-2'); // Swap to Team 2
+      setSimState({ text: 'ALTERNATİF ROTA: AFAD MERKEZİNDEN YENİ EKİP ÇIKIYOR', phase: 3, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON: Yapay Zeka 1. Ekibi güvenli sahaya çekip, AFAD Kriz Merkezinden (cmd) 2. Ekibi sevk ediyor.', 'success');
+      setSelectedStartSiteId('cmd'); // Swap to Team 2 Base
       // Let the directions api catch up, we will start it next tick
     }
     if (scenarioTime === 17 && simState.phase === 3) {
@@ -204,8 +205,8 @@ function App() {
 
     // Phase 4: Total Blockage
     if (scenarioTime === 26 && simState.phase < 4) {
-      setSimState({ text: 'BÜYÜK YIKIM: BÖLGEYE TÜM KARA YOLLARI KOPTU!', phase: 4, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: Yeni sarsıntılar Serinyol ve Asi Nehri hatlarını tamamen kapattı. Afet bölgesi kara ulaşımına kapalı!', 'danger');
+      setSimState({ text: 'BÜYÜK YIKIM: HEDEFE TÜM KARA YOLLARI KOPTU!', phase: 4, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON: Komando Tugayını çevreleyen son 3 yol tahrip oldu. Hedef kara ulaşımına kapalı!', 'danger');
       setDispatchActive(false); // Stop vehicle
     }
 
@@ -417,10 +418,12 @@ function App() {
                 setVisibleHazards([]);
                 setActiveInfoWindow(null);
                 setDispatchActive(false);
+                setSelectedStartSiteId('military-2');
+                setSelectedEndSiteId('military-1');
                 setSimState({ text: 'Simülasyon Başlıyor...', phase: 0, vehicleType: 'truck' });
               }}>
                 <Orbit size={20} className="spin" />
-                6 Şubat Canlandırmasını Başlat
+                6 Şubat Senaryosunu Başlat
               </button>
             )}
             {isSimulation && (
