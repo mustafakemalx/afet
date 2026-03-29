@@ -210,7 +210,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         );
       };
 
-      tryFetchRoute(1); // Sadece 1 (TAM ORTA) noktayı vererek Google'ın ana yollardan sapmasını maksimum engelliyoruz
+      tryFetchRoute(22); // Google'ı, backend AI rotasından sapmadan çevre yollarını kullanmaya zorlamak için maksimum koordinat detayı (22 waypoint) veriyoruz
     });
   }, [routeData, directionsCache, isLoaded]);
 
@@ -370,10 +370,19 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           >
             {activeInfoWindow === hazard.id && (
               <InfoWindow position={toLatLng(hazard.center)} onCloseClick={() => setActiveInfoWindow(null)}>
-                <div style={{ color: '#111', fontFamily: 'inherit', padding: '4px' }}>
-                  <strong>{hazard.label}</strong><br />
-                  {hazard.typeLabel}<br />
-                  Şiddet: %{Math.round(hazard.severity * 100)}
+                <div style={{ color: '#111', fontFamily: 'inherit', padding: '12px 6px', minWidth: '180px' }}>
+                  <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ⚠️ {hazard.label}
+                  </h3>
+                  <div style={{ fontSize: '13px', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #e5e5e5' }}>
+                    <strong>Afet Türü:</strong> {hazard.typeLabel}
+                  </div>
+                  <div style={{ fontSize: '13px', marginBottom: '8px' }}>
+                    <strong>Etki Yarıçapı:</strong> {hazard.radiusKm} km
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#dc2626', fontWeight: 'bold', background: '#fee2e2', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
+                    Bölge Şiddeti: %{Math.round(hazard.severity * 100)}
+                  </div>
                 </div>
               </InfoWindow>
             )}
