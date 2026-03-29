@@ -424,7 +424,7 @@ function App() {
               <h1>{selectedScenario?.name}</h1>
               <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
             </div>
-            {!isSimulation && simState.phase === 0 && (
+            {!isSimulation && simState.phase === 0 && selectedScenario?.city === 'Hatay' && (
               <button className="base-btn btn-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem', background: 'var(--rose)', color: 'white' }} onClick={() => {
                 setIsSimulation(true);
                 setScenarioTime(0);
@@ -437,6 +437,16 @@ function App() {
               }}>
                 <Orbit size={20} className="spin" />
                 6 Şubat Senaryosunu Başlat
+              </button>
+            )}
+            
+            {!isSimulation && selectedScenario?.city !== 'Hatay' && (
+              <button className="base-btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem' }} onClick={() => {
+                setDispatchActive(true);
+                setSimState({ vehicleType: 'truck', vehicleDir: 1 });
+              }}>
+                <Truck size={20} />
+                Saha Ekiplerini Sevk Et
               </button>
             )}
             {isSimulation && (
