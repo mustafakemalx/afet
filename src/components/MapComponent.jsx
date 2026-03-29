@@ -96,7 +96,7 @@ function computeHeading(p1, p2) {
   return (heading + 360) % 360;
 }
 
-export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation }) {
+export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [vehicleHeading, setVehicleHeading] = useState(0);
   const [directionsCache, setDirectionsCache] = useState({});
@@ -139,8 +139,8 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
     Object.entries(routeData.routes).forEach(([routeKey, route]) => {
       if (!route || !route.path || route.path.length < 2) return;
 
-      if (directionsCache[routeKey] && directionsCache[routeKey].originalPath === route.path) {
-        return; // Already calculated
+      if (directionsCache[routeKey] && directionsCache[routeKey].originalPath === route.path && !simWaypoints) {
+        return; // Already calculated (except when detour requested)
       }
 
       const path = route.path;
@@ -151,7 +151,15 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
       // We wrap the request in a function to let us retry with fewer waypoints if Google fails to find a path
       const tryFetchRoute = (waypointCount) => {
         let waypoints = [];
-        if (pts.length > 0 && waypointCount > 0) {
+        
+        // Priority 1: Force Detour simWaypoints
+        if (simWaypoints && simWaypoints.length > 0) {
+          simWaypoints.forEach(wp => {
+            waypoints.push({ location: new window.google.maps.LatLng(wp[0], wp[1]), stopover: false });
+          });
+        } 
+        // Priority 2: Standard route waypoints to snap to dummy backend polyline
+        else if (pts.length > 0 && waypointCount > 0) {
           const step = Math.max(1, Math.floor(pts.length / (waypointCount + 1)));
           for (let i = 1; i <= waypointCount; i++) {
             const pt = pts[i * step];

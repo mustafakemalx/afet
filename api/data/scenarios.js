@@ -39,11 +39,11 @@ const SCENARIOS = [
     ],
     defaultRoute: { startSiteId: 'cmd', endSiteId: 'rescue' },
     hazards: [
-      { id: 'hz-1', type: 'collapse', label: 'Ana Sarsıntı: Antakya Merkez', center: [36.2002, 36.1577], radiusKm: 1.2, severity: 0.78, delaySec: 0 },
-      { id: 'hz-2', type: 'collapse', label: 'Artçı: 1. Rotayı Kesti (Batı Otoyolu)', center: [36.2100, 36.1600], radiusKm: 0.9, severity: 0.65, delaySec: 10 },
-      { id: 'hz-3', type: 'collapse', label: 'Artçı: 2. Rotayı Kesti (AFAD Bağlantısı)', center: [36.2050, 36.1650], radiusKm: 0.8, severity: 0.58, delaySec: 25 },
-      { id: 'hz-4', type: 'collapse', label: 'Artçı: Komando Tugayı Kuzeyi', center: [36.2250, 36.1850], radiusKm: 0.8, severity: 0.72, delaySec: 40 },
-      { id: 'hz-5', type: 'collapse', label: 'Artçı: Komando Tugayı Güneyi', center: [36.2150, 36.1950], radiusKm: 0.8, severity: 0.62, delaySec: 55 },
+      { id: 'hz-1', type: 'collapse', label: 'Ana Sarsıntı: Antakya Merkez', center: [36.2002, 36.1577], radiusKm: 1.1, severity: 0.78, delaySec: 0 },
+      { id: 'hz-2', type: 'collapse', label: 'Artçı: 1. Rotayı Kesti (Kuzey Bağlantısı)', center: [36.2160, 36.1450], radiusKm: 0.9, severity: 0.65, delaySec: 10 },
+      { id: 'hz-3', type: 'collapse', label: 'Artçı: 2. Rotayı Kesti (Güney Çevreyolu)', center: [36.1950, 36.1750], radiusKm: 0.8, severity: 0.58, delaySec: 25 },
+      { id: 'hz-4', type: 'collapse', label: 'Artçı: Komando Tugayı Kuzeyi', center: [36.2320, 36.1850], radiusKm: 0.8, severity: 0.72, delaySec: 40 },
+      { id: 'hz-5', type: 'collapse', label: 'Artçı: Komando Tugayı Doğusu', center: [36.2150, 36.2050], radiusKm: 0.8, severity: 0.62, delaySec: 55 },
     ],
     safeCorridors: [
       { id: 'sc-1', label: 'Kuzey Otoyolu Güvenli Sevk Aksı', path: [[36.1932, 36.1449], [36.2119, 36.1826]], widthKm: 0.42, boost: 30 },

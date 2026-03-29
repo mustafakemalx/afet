@@ -192,27 +192,35 @@ function App() {
       setDispatchActive(false); // Stop vehicle
     }
 
-    // Phase 3: Team Swap / Reroute
-    if (scenarioTime === 15 && simState.phase < 3) {
-      setSimState({ text: 'ALTERNATİF ROTA: AFAD MERKEZİNDEN YENİ EKİP ÇIKIYOR', phase: 3, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: Yapay Zeka 1. Ekibi güvenli sahaya çekip, AFAD Kriz Merkezinden (cmd) 2. Ekibi sevk ediyor.', 'success');
-      setSelectedStartSiteId('cmd'); // Swap to Team 2 Base
-      // Let the directions api catch up, we will start it next tick
+    // Phase 2.5: Dynamic AI Detour (Bending around the hazard)
+    if (scenarioTime === 13 && simState.phase < 2.5) {
+      setSimState({ text: 'YAPAY ZEKA YENİ ROTA ÇİZİYOR. KAVİSLİ ÇEVRE YOLU.', phase: 2.5, vehicleType: 'truck', waypoints: [[36.2160, 36.1200]] }); // Force curve to the far West
+      addNotification('SİMÜLASYON: Yapay Zeka enkaz alanından (kırmızı bölge) kaçınacak alternatif bir "Çevre Yolu Detour" çizdi.', 'success');
+      setDispatchActive(true); // Truck moves again!
+      // This will force the map to redraw with simWaypoints
     }
-    if (scenarioTime === 17 && simState.phase === 3) {
+
+    // Phase 3: Team Swap / Reroute
+    if (scenarioTime === 25 && simState.phase < 3) {
+      setSimState({ text: 'YENİ ROTA DA YIKILDI: AFAD\'DAN EKİP ÇIKIYOR', phase: 3, vehicleType: 'truck', waypoints: [] });
+      addNotification('SİMÜLASYON: 2. büyük artçı çevre yolunu da tahrip etti. 1. Ekip çekiliyor. Yapay Zeka AFAD Kriz Merkezinden (cmd) 2. Ekibi sevk ediyor!', 'warning');
+      setSelectedStartSiteId('cmd'); // Swap to Team 2 Base
+      setDispatchActive(false);
+    }
+    if (scenarioTime === 27 && simState.phase === 3) {
       setDispatchActive(true); // Team 2 starts moving
     }
 
     // Phase 4: Total Blockage
-    if (scenarioTime === 26 && simState.phase < 4) {
+    if (scenarioTime === 40 && simState.phase < 4) {
       setSimState({ text: 'BÜYÜK YIKIM: HEDEFE TÜM KARA YOLLARI KOPTU!', phase: 4, vehicleType: 'truck' });
       addNotification('SİMÜLASYON: Komando Tugayını çevreleyen son 3 yol tahrip oldu. Hedef kara ulaşımına kapalı!', 'danger');
       setDispatchActive(false); // Stop vehicle
     }
 
     // Phase 5: Air Drop Resolution
-    if (scenarioTime === 32 && simState.phase < 5) {
-      setSimState({ text: 'HAVA YARDIMI (AIR-DROP) BAŞLATILDI', phase: 5, vehicleType: 'heli' });
+    if (scenarioTime === 45 && simState.phase < 5) {
+      setSimState({ text: 'HAVA YARDIMI (AIR-DROP) PROTOKOLÜ: İHA AKTİF', phase: 5, vehicleType: 'heli' });
       addNotification('SİMÜLASYON: Yapay Zeka kara müdahalesinin imkansız olduğunu saptadı. Kargo İHA sistemi üzerinden havadan intikal başladı!', 'success');
       setDispatchActive(true); // Restart vehicle, but this time it will fly
     }
@@ -445,6 +453,7 @@ function App() {
             setActiveInfoWindow={setActiveInfoWindow}
             simVehicleType={simState.vehicleType}
             isSimulation={isSimulation}
+            simWaypoints={simState.waypoints}
           />
           <Dashboard
             scenario={{ ...selectedScenario, hazards: visibleHazards }}
