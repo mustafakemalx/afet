@@ -203,14 +203,12 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
             } else if (status === window.google.maps.DirectionsStatus.REQUEST_DENIED) {
               console.error('Google Maps Directions API is NOT enabled! Please enable it in Google Cloud Console.');
               alert('DİKKAT: Google Maps "Directions API" hesabınızda kapalı! Yolları takip eden navigasyon çizgisi için Google Cloud paneline girip "Directions API" yi aktifleştirmeniz gerekmektedir.');
-            } else {
-              console.warn(`Directions request completely failed for ${routeKey}:`, status);
             }
           }
         );
       };
 
-      tryFetchRoute(6); // Reduced to 6 strategic mid-points. This avoids the terrible 'drunk driving' loops while still giving Directions API enough anchors to cleanly arc around the hazards without cutting through them.
+      tryFetchRoute(3); // Cut down to 3 major anchor points. With the new sweeping 35% hazard barrier buffer in the backend, Google Maps can effortlessly trace natural broad roads without side-alley zigzags or clipping the visuals!
     });
   }, [routeData, directionsCache, isLoaded]);
 
