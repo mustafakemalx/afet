@@ -229,6 +229,10 @@ function App() {
         isRouting={isRouting}
         isOffline={isOffline}
         toggleOffline={toggleOffline}
+        dispatchStatus={dispatchStatus}
+        setDispatchStatus={setDispatchStatus}
+        vehicleDir={vehicleDir}
+        setVehicleDir={setVehicleDir}
       />
 
       <div className="notif-fixed-wrapper">
@@ -329,42 +333,6 @@ function App() {
               <h1>{selectedScenario?.name}</h1>
               <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
             </div>
-            
-            {dispatchStatus === 'idle' && (
-              <button className="base-btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem' }} onClick={() => {
-                setDispatchActive(true);
-                setVehicleDir(1);
-                setDispatchStatus('dispatching');
-                addNotification('Saha ekipleri hedefe doğru yola çıktı.', 'info');
-              }}>
-                <Truck size={20} />
-                Saha Ekiplerini Sevk Et
-              </button>
-            )}
-
-            {dispatchStatus === 'dispatching' && (
-              <div style={{ padding: '12px 24px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #38bdf8', borderRadius: '8px', color: '#38bdf8', fontWeight: 'bold' }}>
-                <span className="blink">Ekip Hedefe İlerliyor...</span>
-              </div>
-            )}
-
-            {dispatchStatus === 'arrived' && (
-              <button className="base-btn btn-warning" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem', background: 'var(--amber)', color: 'black' }} onClick={() => {
-                setVehicleDir(-1);
-                setDispatchStatus('returning');
-                addNotification('Hedefe varan ekip koordinasyon merkezine geri çağrılıyor.', 'warning');
-              }}>
-                <Truck size={20} style={{ transform: 'scaleX(-1)' }} />
-                Ekibi Geri Çek
-              </button>
-            )}
-
-            {dispatchStatus === 'returning' && (
-              <div style={{ padding: '12px 24px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid var(--amber)', borderRadius: '8px', color: 'var(--amber)', fontWeight: 'bold' }}>
-                <span className="blink">Ekip Geri Dönüyor...</span>
-              </div>
-            )}
-            
           </div>
         </section>
 

@@ -47,6 +47,10 @@ export default function Sidebar({
   isRouting,
   isOffline,
   toggleOffline,
+  dispatchStatus,
+  setDispatchStatus,
+  vehicleDir,
+  setVehicleDir
 }) {
   return (
     <aside className="sidebar">
@@ -173,15 +177,49 @@ export default function Sidebar({
                 {isOffline ? <WifiOff size={16} /> : <Wifi size={16} />}
                 Bağlantı (Online/Mesh)
               </button>
-              <button
-                className={`btn ${dispatchActive ? 'success' : ''}`}
-                type="button"
-                onClick={() => setDispatchActive(!dispatchActive)}
-                disabled={!routeData}
-              >
-                <Truck size={16} />
-                {dispatchActive ? 'İntikal aktif' : 'Ekibi sevk et'}
-              </button>
+              
+              {dispatchStatus === 'idle' && (
+                <button
+                  className="btn primary"
+                  type="button"
+                  onClick={() => {
+                    setDispatchActive(true);
+                    setVehicleDir(1);
+                    setDispatchStatus('dispatching');
+                  }}
+                  disabled={!routeData}
+                >
+                  <Truck size={16} />
+                  Ekibi Sevk Et
+                </button>
+              )}
+
+              {dispatchStatus === 'dispatching' && (
+                <div style={{ padding: '10px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #38bdf8', borderRadius: '4px', color: '#38bdf8', fontWeight: 'bold', textAlign: 'center', fontSize: '13px' }}>
+                  <span className="blink">Ekip Hedefe İlerliyor...</span>
+                </div>
+              )}
+
+              {dispatchStatus === 'arrived' && (
+                <button
+                  className="btn"
+                  style={{ background: 'var(--amber)', color: 'black', border: '1px solid var(--amber)' }}
+                  type="button"
+                  onClick={() => {
+                    setVehicleDir(-1);
+                    setDispatchStatus('returning');
+                  }}
+                >
+                  <Truck size={16} style={{ transform: 'scaleX(-1)' }} />
+                  Ekibi Geri Çek
+                </button>
+              )}
+
+              {dispatchStatus === 'returning' && (
+                <div style={{ padding: '10px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid var(--amber)', borderRadius: '4px', color: 'var(--amber)', fontWeight: 'bold', textAlign: 'center', fontSize: '13px' }}>
+                  <span className="blink">Ekip Geri Dönüyor...</span>
+                </div>
+              )}
             </div>
           </section>
 

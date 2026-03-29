@@ -464,7 +464,6 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           <Marker
             position={animPath[dispatchIndex]}
             icon={simVehicleType === 'heli' ? {
-              // The Heli SVG points UP naturally, so rotation maps perfectly to 0=North
               path: 'M17.42 12.06L16 11V6H14L10 9H3C2.45 9 2 9.45 2 10V14C2 14.55 2.45 15 3 15H10L14 18V13L16 12V16L18 16.5V13.5L20.5 14L22 12L17.42 12.06Z M12 3H14V5H12V3Z M12 19H14V21H12V19Z M2 3H10V5H2V3Z', 
               fillColor: '#0ea5e9',
               fillOpacity: 1,
@@ -472,14 +471,14 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
               rotation: vehicleHeading,
               anchor: new window.google.maps.Point(12, 12),
             } : {
-              // The Truck SVG points LEFT normally. We offset internal rotation mentally or via SVG.
-              // To offset rotation easily, we just add 90 or 180 to vehicleHeading. Truck facing left means -90 deg.
-              path: 'M20,8h-3V4H3C1.9,4,1,4.9,1,6v11h2c0,1.66,1.34,3,3,3s3-1.34,3-3h6c0,1.66,1.34,3,3,3s3-1.34,3-3h2v-5L20,8z M6,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S6.55,18,6,18z M19.5,9.5l1.96,2.5H17V9.5H19.5z M18,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S18.55,18,18,18z',
+              // The top-down Google arrow behaves perfectly with native 360-degree rotation paths
+              path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
               fillColor: '#22c55e',
               fillOpacity: 1,
-              scale: 0.9,
-              rotation: vehicleHeading - 90, // Fix truck's orthogonal SVG orientation!
-              anchor: new window.google.maps.Point(12, 12)
+              scale: 5,
+              strokeColor: '#000000',
+              strokeWeight: 1.5,
+              rotation: vehicleHeading, 
             }}
             zIndex={100}
           />
