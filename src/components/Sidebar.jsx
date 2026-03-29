@@ -141,7 +141,9 @@ export default function Sidebar({
               value={selectedStartSiteId}
               onChange={(event) => onStartChange(event.target.value)}
             >
-              {selectedScenario.sites.map((site) => (
+              {selectedScenario.sites
+                .filter((site) => site.role !== 'target')
+                .map((site) => (
                 <option key={site.id} value={site.id} disabled={site.id === selectedEndSiteId}>
                   {site.label}
                 </option>
@@ -157,7 +159,9 @@ export default function Sidebar({
               value={selectedEndSiteId}
               onChange={(event) => onEndChange(event.target.value)}
             >
-              {selectedScenario.sites.map((site) => (
+              {selectedScenario.sites
+                .filter((site) => site.role === 'target')
+                .map((site) => (
                 <option key={site.id} value={site.id} disabled={site.id === selectedStartSiteId}>
                   {site.label}
                 </option>
