@@ -187,9 +187,9 @@ function App() {
     
     // Phase 2: First Blockage
     if (scenarioTime === 10 && simState.phase < 2) {
-      setSimState({ text: 'ARTÇI DEPREM: 1. EKİBİN YOLU KAPANDI!', phase: 2, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: Batı otoyolu merkezli artçı sarsıntı aracın rotasını tamamen kesti! İlerleyiş durdu.', 'danger');
-      setDispatchActive(false); // Stop vehicle
+      setSimState({ text: 'ARTÇI DEPREM: 1. EKİBİN BAĞLANTISI KOPTU!', phase: 2, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON: Kırmızı alandaki artçı sarsıntı aracın üzerine düştü! Aracın sinyali kesildi ve haritadan yok oldu.', 'danger');
+      setDispatchActive(false); // Stop and vanish vehicle completely
     }
 
     // Phase 2.5: Dynamic AI Detour (Bending around the hazard)
@@ -200,11 +200,11 @@ function App() {
       // This will force the map to redraw with simWaypoints
     }
 
-    // Phase 3: Forced Retreat
+    // Phase 3: Total Failure on Route 1
     if (scenarioTime === 24 && simState.phase < 3) {
-      setSimState({ text: 'YENİ ROTA DA YIKILDI: 1. EKİP GERİ ÇEKİLİYOR!', phase: 3, vehicleType: 'truck', vehicleDir: -1, waypoints: [[36.2160, 36.1200]] });
-      addNotification('SİMÜLASYON: 2. büyük artçı çevre yolunu da tahrip etti. 1. Ekip güvenli alana dönmek için TERS YÖNDE (Geri Vites) hareket ediyor!', 'danger');
-      setDispatchActive(true); // It moves backwards!
+      setSimState({ text: 'ÇEVRE YOLU YIKILDI: 1. EKİP GÖREVİ İPTAL!', phase: 3, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
+      addNotification('SİMÜLASYON: Kırmızı çevre yolu enkazında aracın bağlantısı koptu. Araç yok oldu! Görev diğer kışlaya devrediliyor...', 'danger');
+      setDispatchActive(false); // Vehicle vanishes completely
     }
     
     // Phase 3.5: Team 2 Swap
