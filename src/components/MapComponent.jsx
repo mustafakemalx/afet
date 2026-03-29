@@ -249,59 +249,64 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
     }
   }, [dispatchActive, activeRouteKey, directionsCache, activeRoute, simVehicleType, scenario]);
 
+  // Keep a ref of the scenario so we don't need to depend on it
+  const scenarioRef = useRef(scenario);
+  useEffect(() => {
+    scenarioRef.current = scenario;
+  }, [scenario]);
+
   useEffect(() => {
     if (!animPath || animPath.length === 0) return undefined;
 
-    // Do NOT reset index to 0 if we are reversing! Start from current index.
-    let index = simVehicleDir === -1 ? dispatchIndex : 0;
-    if (simVehicleDir !== -1) {
-      setDispatchIndex(0);
-      setVehicleHeading(0);
-    }
+    setDispatchIndex(0);
+    setVehicleHeading(0);
 
     const interval = window.setInterval(() => {
-      if (simVehicleDir === -1) {
-        if (index <= 0) {
-          window.clearInterval(interval);
-          return;
+      setDispatchIndex((prevIndex) => {
+        let index = prevIndex;
+        
+        if (simVehicleDir === -1) {
+          if (index <= 0) {
+            window.clearInterval(interval);
+            return prevIndex;
+          }
+          index -= 1;
+        } else {
+          if (index >= animPath.length - 1) {
+            window.clearInterval(interval);
+            return prevIndex;
+          }
+          index += 1;
         }
-        index -= 1;
-      } else {
-        if (index >= animPath.length - 1) {
-          window.clearInterval(interval);
-          return;
+        
+        // Calculate rotation towards next ping
+        const p1 = animPath[index];
+        const p2 = simVehicleDir === -1 ? animPath[index - 1] : animPath[index + 1];
+        if (p1 && p2) {
+          setVehicleHeading(computeHeading(p1, p2));
         }
-        index += 1;
-      }
-      
-      // Calculate rotation towards next ping
-      const p1 = animPath[index];
-      // If going backwards, the "next" point is the one behind us (index - 1)
-      // Wait, if we are at index and heading to index-1, we look towards index-1.
-      const p2 = simVehicleDir === -1 ? animPath[index - 1] : animPath[index + 1];
-      if (p1 && p2) {
-        setVehicleHeading(computeHeading(p1, p2));
-      }
 
-      // Feature: Check for dynamic active hazard collisions!
-      if (isSimulation && scenario?.hazards) {
-        const hitHazard = scenario.hazards.find(h => {
-          const dist = getDistanceKm(p1, {lat: h.center[0], lng: h.center[1]});
-          return dist <= h.radiusKm;
-        });
+        // Feature: Check for dynamic active hazard collisions!
+        if (isSimulation && scenarioRef.current?.hazards) {
+          const hitHazard = scenarioRef.current.hazards.find(h => {
+            const dist = getDistanceKm(p1, {lat: h.center[0], lng: h.center[1]});
+            return dist <= h.radiusKm;
+          });
 
-        if (hitHazard) {
-          window.clearInterval(interval);
-          if (onHazardCollision) onHazardCollision(hitHazard.id);
-          return;
+          if (hitHazard) {
+            window.clearInterval(interval);
+            if (onHazardCollision) onHazardCollision(hitHazard.id);
+            return index; // Vehicle vanishes, stop updating
+          }
         }
-      }
 
-      setDispatchIndex(index);
+        return index;
+      });
     }, 150); // Speed optimized for road curve smoothing
 
+    // Dependency array EXCLUDES scenario and isSimulation to prevent interval restart teleportation!
     return () => window.clearInterval(interval);
-  }, [animPath, simVehicleDir, isSimulation, scenario, onHazardCollision]);
+  }, [animPath, simVehicleDir, onHazardCollision, isSimulation]);
 
   if (!isLoaded) {
     return (
