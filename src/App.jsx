@@ -186,16 +186,8 @@ function App() {
     }
     // We move the blockage narrative to be dynamically triggered by the Map collision!
     
-    // Phase 2.5: Dynamic AI Detour (Bending around the hazard)
-    if (scenarioTime === 15 && simState.phase < 2.5) {
-      setSimState({ text: 'YAPAY ZEKA YENİ ROTA ÇİZİYOR. KAVİSLİ ÇEVRE YOLU.', phase: 2.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [[36.2160, 36.1200]] }); // Force curve to the far West
-      addNotification('SİMÜLASYON: Yapay Zeka enkaz alanından (kırmızı bölge) kaçınacak alternatif bir "Çevre Yolu Detour" çizdi.', 'success');
-      setDispatchActive(true); // Truck moves again!
-      // This will force the map to redraw with simWaypoints
-    }
-    
-    // Phase 3.5: Team 2 Swap (After Team 1 vanishes dynamically)
-    if (scenarioTime === 32 && simState.phase < 3.5) {
+    // Phase 3.5: Team 2 Swap (Wait for Team 1 to vanish dynamically at Phase 3 first)
+    if (scenarioTime === 32 && simState.phase === 3) {
       setSimState({ text: 'DEFNE HASTANESİNDEN 2. EKİP ÇIKIYOR!', phase: 3.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
       addNotification('SİMÜLASYON: Yapay Zeka komutayı devretti. Defne hastanesinden (field-2) 2. Ekibi yola çıkardı!', 'warning');
       setSelectedStartSiteId('field-2'); // Swap to Team 2 Base
@@ -260,13 +252,15 @@ function App() {
     if (!isSimulation) return;
     
     if (simState.phase === 1) {
-      setSimState({ text: 'ARTÇI DEPREM: 1. EKİBİN BAĞLANTISI KOPTU!', phase: 2, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Araç kırmızı tehlilekeli alan sinirine girdigi anda sinyali kesildi ve haritadan yok oldu.', 'danger');
-      setDispatchActive(false); // Instant vanish
+      // 1.seferde giderken karşısına kırmızı alan çıkcak oda rote değiştircek 
+      setSimState({ text: '1. ROTA TIKANDI: YAPAY ZEKA KAVİSLİ ÇEVRE YOLUNA GEÇİYOR', phase: 2.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [[36.2160, 36.1200]] });
+      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Araç kırmızı tehlikeli alanı saptadı! Rota anında değiştirildi (yok olmadı!).', 'warning');
+      // Truck does NOT get deactivated, it immediately pulls the new waypoints and reroutes!
     }
     else if (simState.phase === 2.5) {
+      // sonrasında bu alanda 1 tane daha falan kırmızı ya girdiğinde yok olmalı
       setSimState({ text: 'ÇEVRE YOLU YIKILDI: 1. EKİP GÖREVİ İPTAL!', phase: 3, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
-      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Kırmızı çevre yolu enkazında aracın bağlantısı koptu. Araç yok oldu! Görev diğer kışlaya devrediliyor...', 'danger');
+      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Çevre yolu enkazında aracın bağlantısı koptu. Araç kırmızı alanda yok oldu! Görev Devri Hazırlanıyor...', 'danger');
       setDispatchActive(false); // Instant vanish
     }
   };
