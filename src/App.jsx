@@ -367,8 +367,9 @@ function App() {
           <Dashboard
             scenario={selectedScenario}
             routeData={routeData}
-            activeRouteKey={activeRouteKey}
-            setActiveRouteKey={setActiveRouteKey}
+            isOffline={isOffline}
+            activeRouteKey="safest"
+            dispatchActive={dispatchActive}
             activeInfoWindow={activeInfoWindow}
             setActiveInfoWindow={setActiveInfoWindow}
           />
