@@ -210,7 +210,7 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         );
       };
 
-      tryFetchRoute(22); // Google'ı, backend AI rotasından sapmadan çevre yollarını kullanmaya zorlamak için maksimum koordinat detayı (22 waypoint) veriyoruz
+      tryFetchRoute(6); // Reduced to 6 strategic mid-points. This avoids the terrible 'drunk driving' loops while still giving Directions API enough anchors to cleanly arc around the hazards without cutting through them.
     });
   }, [routeData, directionsCache, isLoaded]);
 
