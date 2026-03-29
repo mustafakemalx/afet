@@ -164,7 +164,8 @@ export default function MapComponent({
       const routeKey = fleetEntry.id;
       const route = fleetEntry.route;
       
-      if (!route || !route.path || route.path.length < 2) return;
+      // Do not snap safe flight vectors to roads
+      if (!route || !route.path || route.path.length < 2 || route.vehicleType === 'heli') return;
 
       const cacheKey = JSON.stringify(route.path);
       if (directionsCache[routeKey] && directionsCache[routeKey].signature === cacheKey) {
@@ -383,6 +384,25 @@ export default function MapComponent({
           const route = fleetEntry.route;
           if (!route) return null;
           
+          if (route.vehicleType === 'heli') {
+             return (
+              <Polyline
+                key={`poly-${routeKey}`}
+                path={toLatLngPath(route.path)}
+                options={{
+                  strokeColor: '#0ea5e9', // Cyan Gök Mavisi
+                  strokeOpacity: 0, // Solid line hidden
+                  icons: [{
+                    icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.8, scale: 4 },
+                    offset: '0',
+                    repeat: '20px'
+                  }],
+                  zIndex: 15,
+                }}
+              />
+             );
+          }
+
           const cached = directionsCache[routeKey];
           
           if (cached) {
@@ -441,6 +461,10 @@ export default function MapComponent({
         {dispatchActive && Object.entries(animPaths).map(([id, path]) => {
           if (!path || path.length === 0) return null;
           
+          const originalFleetEntry = fleetRoutes.find(f => f.id === id);
+          if (!originalFleetEntry) return null;
+          const isHeli = originalFleetEntry.route.vehicleType === 'heli';
+
           const clampedIndex = Math.min(Math.max(0, dispatchIndex), path.length - 1);
           const p1 = path[clampedIndex];
           if (!p1) return null;
@@ -463,16 +487,23 @@ export default function MapComponent({
             <Marker
               key={`vehicle-${id}`}
               position={p1}
-              icon={{
-                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                fillColor: '#22c55e',
-                fillOpacity: 1,
-                scale: 5,
-                strokeColor: '#000000',
-                strokeWeight: 1.5,
-                rotation: heading, 
+              icon={isHeli ? {
+                 path: 'M17.42 12.06L16 11V6H14L10 9H3C2.45 9 2 9.45 2 10V14C2 14.55 2.45 15 3 15H10L14 18V13L16 12V16L18 16.5V13.5L20.5 14L22 12L17.42 12.06Z M12 3H14V5H12V3Z M12 19H14V21H12V19Z M2 3H10V5H2V3Z', 
+                 fillColor: '#0ea5e9',
+                 fillOpacity: 1,
+                 scale: 1.1,
+                 rotation: heading,
+                 anchor: new window.google.maps.Point(12, 12),
+              } : {
+                 path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                 fillColor: '#22c55e',
+                 fillOpacity: 1,
+                 scale: 5,
+                 strokeColor: '#000000',
+                 strokeWeight: 1.5,
+                 rotation: heading, 
               }}
-              zIndex={100}
+              zIndex={isHeli ? 150 : 100}
             />
           );
         })}

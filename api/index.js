@@ -554,6 +554,35 @@ app.post('/api/route', async (req, res) => {
 
   const safest = runAStar('safest', layout, startPoint, endPoint);
 
+  // Air Support Fallback Logic: Detect if the grid path unavoidably breached a hazard zone
+  let isHeliRequired = false;
+  safest.path.forEach(pt => {
+    if (isHeliRequired) return;
+    hydratedScenario.hazards.forEach(h => {
+      if (haversineDistance(pt, h.center) <= h.radiusKm * 1.6) {
+         isHeliRequired = true;
+      }
+    });
+  });
+
+  if (isHeliRequired) {
+    safest.vehicleType = 'heli';
+    // Generate a direct linear flight path for the helicopter (120 smooth steps)
+    const flightPath = [];
+    const steps = 120;
+    const [sy, sx] = startPoint;
+    const [ey, ex] = endPoint;
+    for (let i = 0; i <= steps; i++) {
+        flightPath.push([sy + ((ey - sy) * (i / steps)), sx + ((ex - sx) * (i / steps))]);
+    }
+    safest.path = flightPath;
+    safest.distanceKm = haversineDistance(startPoint, endPoint); // Kuş uçuşu mesafe
+    safest.etaMinutes = (safest.distanceKm / 180) * 60; // Helikopter hızı (180 kmh)
+    safest.riskScore = 0; // Havadan risk yeryüzünden bağımsızdır
+  } else {
+    safest.vehicleType = 'truck';
+  }
+
   if (mode !== 'safest_only') {
     shortest = buildDirectRoute(startPoint, endPoint, hydratedScenario);
     balanced = runAStar('balanced', layout, startPoint, endPoint);
