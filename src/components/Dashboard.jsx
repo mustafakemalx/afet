@@ -222,49 +222,38 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Risk Katmanları & Hava Durumu */}
+      {/* Canlı Hava Durumu */}
       <div className="panel floating-panel dashboard-card">
-          <div className="section-title">
-            <ShieldCheck size={16} />
-            <span>Risk & Meteoroloji</span>
-          </div>
-
-        <div className="metric-grid compact">
-          <div className="metric-card">
-            <span>Hazırlılık</span>
-            <strong>{scenario?.stats?.readinessScore ?? 0}</strong>
-          </div>
-          <div className="metric-card">
-            <span>Ort. Şiddet</span>
-            <strong>{scenario?.stats?.averageSeverity ?? 0}</strong>
-          </div>
+        <div className="section-title">
+          <Wind size={18} color="#60a5fa" />
+          <span style={{ fontSize: '1.1rem', color: '#60a5fa' }}>Bölgesel Meteoroloji İstasyonu</span>
         </div>
 
-        <div className="weather-strip">
-          <div>
-            <span style={{ transition: 'color 0.3s' }}>🌡️ {(((scenario?.weather?.temperatureC ?? 0) + (liveOffset.temp || 0))).toFixed(1)}°C</span>
+        <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '14px' }}>
+          <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '18px 12px', border: 'none', borderTop: '2px solid rgba(255,255,255,0.1)' }}>
+            <span style={{ fontSize: '0.85rem' }}>Sıcaklık</span>
+            <strong style={{ fontSize: '1.6rem', color: 'white' }}>{(((scenario?.weather?.temperatureC ?? 0) + (liveOffset.temp || 0))).toFixed(1)}°C</strong>
           </div>
-          <div>
-            <Waves size={15} />
-            <span style={{ transition: 'color 0.3s' }}>{Math.max(0, Math.round((scenario?.weather?.humidity ?? 0) + (liveOffset.humid || 0)))}% nem</span>
+          <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '18px 12px', border: 'none', borderTop: '2px solid rgba(245, 158, 11, 0.5)' }}>
+            <span style={{ fontSize: '0.85rem' }}>Hissedilen</span>
+            <strong style={{ fontSize: '1.6rem', color: 'var(--amber)' }}>{scenario?.weather?.feelsLikeC ?? 0}°C</strong>
           </div>
-          <div>
-            <Wind size={15} />
-            <span style={{ transition: 'color 0.3s' }}>{Math.max(0, (scenario?.weather?.windKmh ?? 0) + (liveOffset.wind || 0)).toFixed(1)} km/sa</span>
+          <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '18px 12px', border: 'none', borderTop: '2px solid rgba(96, 165, 250, 0.5)' }}>
+            <span style={{ fontSize: '0.85rem' }}>Nem Oranı</span>
+            <strong style={{ fontSize: '1.6rem', color: '#60a5fa' }}>%{Math.max(0, Math.round((scenario?.weather?.humidity ?? 0) + (liveOffset.humid || 0)))}</strong>
           </div>
-          <div>
-            <span>👁 {scenario?.weather?.visibilityKm ?? 0} km</span>
+          <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '18px 12px', border: 'none', borderTop: '2px solid rgba(167, 139, 250, 0.5)' }}>
+            <span style={{ fontSize: '0.85rem' }}>Rüzgar</span>
+            <strong style={{ fontSize: '1.6rem', color: '#a78bfa' }}>{Math.max(0, (scenario?.weather?.windKmh ?? 0) + (liveOffset.wind || 0)).toFixed(1)} <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>km/s</span></strong>
           </div>
-          {scenario?.weather?.condition && (
-            <div>
-              <span>☁️ {scenario.weather.condition}</span>
-            </div>
-          )}
-          {scenario?.weather?.feelsLikeC != null && (
-            <div>
-              <span>🤒 {scenario.weather.feelsLikeC}°C his.</span>
-            </div>
-          )}
+          <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '18px 12px', border: 'none', borderTop: '2px solid rgba(255,255,255,0.1)' }}>
+            <span style={{ fontSize: '0.85rem' }}>Görüş</span>
+            <strong style={{ fontSize: '1.6rem', color: 'white' }}>{scenario?.weather?.visibilityKm ?? 0} <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>km</span></strong>
+          </div>
+          <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '18px 12px', border: 'none', borderTop: '2px solid rgba(34, 197, 94, 0.5)' }}>
+            <span style={{ fontSize: '0.85rem' }}>Gökyüzü</span>
+            <strong style={{ fontSize: '1.2rem', color: '#4ade80', paddingTop: '4px' }}>{scenario?.weather?.condition || 'Açık'}</strong>
+          </div>
         </div>
       </div>
 
