@@ -162,20 +162,34 @@ export default function Dashboard({
               <div
                 key={hazard.id}
                 className={`incident-row flash-new ${hazard.id === activeInfoWindow ? 'active-incident' : ''}`}
+                style={{ flexDirection: 'column', alignItems: 'stretch', padding: '16px' }}
                 onClick={() => setActiveInfoWindow(hazard.id)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div className="incident-index">
-                    {idx + 1}
-                  </div>
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff' }}>{hazard.label}</h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Etki Alanı: Merkez ({(idx * 15) + 3} sn. önce eklendi)</span>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                   <div className="system-pulse" style={{ background: 'rgba(239, 68, 68, 0.2)' }}><AlertTriangle size={14} color="#ef4444" /></div>
+                   <strong style={{fontSize: '0.95rem', color: 'white'}}>{hazard.label}</strong>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <strong style={{ display: 'block', fontSize: '1.05rem', color: 'var(--rose)' }}>{(hazard.severity * 10).toFixed(1)} Şiddet</strong>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{hazard.radiusKm} km çap</span>
+                
+                <div className="metric-grid" style={{gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px'}}>
+                  <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.02)', border: 'none' }}>
+                    <span>Ortalama Afet Şiddeti</span>
+                    <strong style={{fontSize: '1.4rem', color: 'var(--rose)', transition: 'color 0.3s'}}>{(hazard.severity * 10).toFixed(1)}</strong>
+                    <div className="severity-bar">
+                      <div className="severity-fill" style={{width: `${Math.min(hazard.severity * 100, 100)}%`, transition: 'width 0.5s ease-out'}} />
+                    </div>
+                  </div>
+                  <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.02)', border: 'none' }}>
+                    <div style={{display:'flex', alignItems:'center', gap: '4px'}}><Users size={14} /> <span>Ort. Etkilenen Nüfus</span></div>
+                    <strong style={{color: 'var(--amber)'}}>{Math.floor((livePop / 5) * hazard.severity).toLocaleString('tr-TR')}</strong>
+                  </div>
+                  <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.02)', border: 'none' }}>
+                    <div style={{display:'flex', alignItems:'center', gap: '4px'}}><MapPin size={14} /> <span>Tehdit Noktası</span></div>
+                    <strong>1</strong>
+                  </div>
+                  <div className="metric-card impact-card" style={{ background: 'rgba(255, 255, 255, 0.02)', border: 'none' }}>
+                    <span>Kapalı Segment</span>
+                    <strong style={{color: 'var(--rose)'}}>{idx + 1}</strong>
+                  </div>
                 </div>
               </div>
             ))
