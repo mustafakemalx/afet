@@ -84,7 +84,7 @@ function toLatLngPath(path) {
   return path.map((p) => ({ lat: p[0], lng: p[1] }));
 }
 
-export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow }) {
+export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [directionsCache, setDirectionsCache] = useState({});
   const [animPath, setAnimPath] = useState([]);
@@ -178,21 +178,44 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
 
   // Dispatch animation preparation
   useEffect(() => {
-    if (!dispatchActive || !activeRouteKey) {
+    if (!dispatchActive) {
       setAnimPath([]);
       return;
     }
+    
+    // Feature: Helicopters ignore roads and fly straight to the target
+    if (simVehicleType === 'heli') {
+      // Fly directly from the active command/military base to the target
+      const baseSite = scenario.sites.find(s => s.role === 'military' || s.role === 'command');
+      const targetSite = scenario.sites.find(s => s.role === 'target');
+      
+      const startP = toLatLng(baseSite.coords);
+      const endP = toLatLng(targetSite.coords);
+      
+      // Interpolate points for a smooth flight animation
+      const steps = 1500;
+      const path = [];
+      for(let i=0; i<=steps; i++) {
+        path.push({
+          lat: startP.lat + (endP.lat - startP.lat) * (i/steps),
+          lng: startP.lng + (endP.lng - startP.lng) * (i/steps),
+        });
+      }
+      setAnimPath(path);
+      return;
+    }
+
     const cached = directionsCache[activeRouteKey];
     if (cached) {
-      // Directions API returning a beautiful overview path with many small points
+      // Directions API returning a beautiful overview path
       setAnimPath(cached.result.routes[0].overview_path);
     } else if (activeRoute?.path) {
-      // Fallback grid path
+      // Fallback path
       setAnimPath(toLatLngPath(activeRoute.path));
     } else {
       setAnimPath([]);
     }
-  }, [dispatchActive, activeRouteKey, directionsCache, activeRoute]);
+  }, [dispatchActive, activeRouteKey, directionsCache, activeRoute, simVehicleType, scenario]);
 
   useEffect(() => {
     if (!animPath || animPath.length === 0) return undefined;
@@ -359,7 +382,19 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         {dispatchActive && animPath[dispatchIndex] && (
           <Marker
             position={animPath[dispatchIndex]}
-            icon={dispatchMarkerIcon}
+            icon={simVehicleType === 'heli' ? {
+              path: 'M17.42 12.06L16 11V6H14L10 9H3C2.45 9 2 9.45 2 10V14C2 14.55 2.45 15 3 15H10L14 18V13L16 12V16L18 16.5V13.5L20.5 14L22 12L17.42 12.06Z M12 3H14V5H12V3Z M12 19H14V21H12V19Z M2 3H10V5H2V3Z', // Heli SVG path
+              fillColor: '#0ea5e9',
+              fillOpacity: 1,
+              scale: 1.5,
+              anchor: new window.google.maps.Point(12, 12),
+            } : {
+              path: 'M20,8h-3V4H3C1.9,4,1,4.9,1,6v11h2c0,1.66,1.34,3,3,3s3-1.34,3-3h6c0,1.66,1.34,3,3,3s3-1.34,3-3h2v-5L20,8z M6,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S6.55,18,6,18z M19.5,9.5l1.96,2.5H17V9.5H19.5z M18,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S18.55,18,18,18z', // Truck SVG path
+              fillColor: '#22c55e',
+              fillOpacity: 1,
+              scale: 1.5,
+              anchor: new window.google.maps.Point(12, 12)
+            }}
             zIndex={100}
           />
         )}

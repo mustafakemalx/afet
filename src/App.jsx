@@ -34,6 +34,10 @@ function App() {
   const [scenarioTime, setScenarioTime] = useState(0);
   const [visibleHazards, setVisibleHazards] = useState([]);
   const [activeInfoWindow, setActiveInfoWindow] = useState(null);
+  
+  // Simulation Mode State
+  const [isSimulation, setIsSimulation] = useState(false);
+  const [simState, setSimState] = useState({ text: '', phase: 0, vehicleType: 'truck' });
 
   const addNotification = (msg, type = 'info') => {
     const id = Date.now() + Math.random();
@@ -167,6 +171,59 @@ function App() {
       }
     }
   }, [scanPulse, isOffline, selectedScenario, scenarioTime, routeData]);
+
+  // The 6 Subat Simulation Story Engine
+  useEffect(() => {
+    if (!isSimulation || !selectedScenario) return;
+
+    // Phase 1: Departure
+    if (scenarioTime === 1 && simState.phase < 1) {
+      setSimState({ text: '1. EKİP AFET BÖLGESİNE SEVK EDİLİYOR', phase: 1, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON: 8. Komando Tugayından kurtarma aracı ağır yıkım bölgesine hareket etti.', 'info');
+      setSelectedStartSiteId('military-1');
+      setDispatchActive(true);
+    }
+    
+    // Phase 2: First Blockage
+    if (scenarioTime === 10 && simState.phase < 2) {
+      setSimState({ text: 'ARTÇI DEPREM: 1. EKİBİN YOLU KAPANDI!', phase: 2, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON: Defne Artçısı aracın rotasını (Kuzey Otoyolu) tamamen enkazla kapattı! İlerleyiş durdu.', 'danger');
+      setDispatchActive(false); // Stop vehicle
+    }
+
+    // Phase 3: Team Swap / Reroute
+    if (scenarioTime === 15 && simState.phase < 3) {
+      setSimState({ text: 'ALTERNATİF ROTA: 2. EKİP SERİNYOL\'DAN ÇIKIYOR', phase: 3, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON: Yapay Zeka 1. Ekibi geri çağırıp, engelsiz rotaya en yakın olan Serinyol komutanlığından 2. Ekibi sevk ediyor.', 'success');
+      setSelectedStartSiteId('military-2'); // Swap to Team 2
+      // Let the directions api catch up, we will start it next tick
+    }
+    if (scenarioTime === 17 && simState.phase === 3) {
+      setDispatchActive(true); // Team 2 starts moving
+    }
+
+    // Phase 4: Total Blockage
+    if (scenarioTime === 26 && simState.phase < 4) {
+      setSimState({ text: 'BÜYÜK YIKIM: BÖLGEYE TÜM KARA YOLLARI KOPTU!', phase: 4, vehicleType: 'truck' });
+      addNotification('SİMÜLASYON: Yeni sarsıntılar Serinyol ve Asi Nehri hatlarını tamamen kapattı. Afet bölgesi kara ulaşımına kapalı!', 'danger');
+      setDispatchActive(false); // Stop vehicle
+    }
+
+    // Phase 5: Air Drop Resolution
+    if (scenarioTime === 32 && simState.phase < 5) {
+      setSimState({ text: 'HAVA YARDIMI (AIR-DROP) BAŞLATILDI', phase: 5, vehicleType: 'heli' });
+      addNotification('SİMÜLASYON: Yapay Zeka kara müdahalesinin imkansız olduğunu saptadı. Kargo İHA sistemi üzerinden havadan intikal başladı!', 'success');
+      setDispatchActive(true); // Restart vehicle, but this time it will fly
+    }
+    
+    // Phase 6: Mission Success
+    if (scenarioTime === 42 && simState.phase < 6) {
+      setSimState({ text: 'HAVA YARDIMI BAŞARIYLA ULAŞTI', phase: 6, vehicleType: 'heli' });
+      addNotification('SİMÜLASYON TAMAMLANDI: Afet anında otonom rota değiştirme ve hava kurtarma eylemi başarıyla test edildi.', 'success');
+      setIsSimulation(false); // End simulation
+    }
+
+  }, [scenarioTime, isSimulation, selectedScenario, simState.phase]);
 
   // Scenario Timer (ticks up every 1 second when a scenario is active)
   useEffect(() => {
@@ -347,10 +404,30 @@ function App() {
 
       <main className="workspace">
         <section className="mission-strip">
-          <div>
-            <p className="eyebrow">Afet Yönetiminde Yerli Uydu Verisi Entegrasyonu</p>
-            <h1>{selectedScenario?.name}</h1>
-            <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div>
+              <p className="eyebrow">Afet Yönetiminde Yerli Uydu Verisi Entegrasyonu</p>
+              <h1>{selectedScenario?.name}</h1>
+              <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
+            </div>
+            {!isSimulation && simState.phase === 0 && (
+              <button className="base-btn btn-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem', background: 'var(--rose)', color: 'white' }} onClick={() => {
+                setIsSimulation(true);
+                setScenarioTime(0);
+                setVisibleHazards([]);
+                setActiveInfoWindow(null);
+                setDispatchActive(false);
+                setSimState({ text: 'Simülasyon Başlıyor...', phase: 0, vehicleType: 'truck' });
+              }}>
+                <Orbit size={20} className="spin" />
+                6 Şubat Canlandırmasını Başlat
+              </button>
+            )}
+            {isSimulation && (
+              <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid var(--rose)', padding: '12px 24px', borderRadius: '8px', color: 'white', fontWeight: 'bold' }}>
+                <span className="blink">{simState.text}</span>
+              </div>
+            )}
           </div>
         </section>
 
@@ -363,6 +440,8 @@ function App() {
             dispatchActive={dispatchActive}
             activeInfoWindow={activeInfoWindow}
             setActiveInfoWindow={setActiveInfoWindow}
+            simVehicleType={simState.vehicleType}
+            isSimulation={isSimulation}
           />
           <Dashboard
             scenario={{ ...selectedScenario, hazards: visibleHazards }}
