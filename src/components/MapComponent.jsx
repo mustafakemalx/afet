@@ -84,8 +84,21 @@ function toLatLngPath(path) {
   return path.map((p) => ({ lat: p[0], lng: p[1] }));
 }
 
+// Basit matematiksel rota yönlendirme fonksiyonu (Heading)
+function computeHeading(p1, p2) {
+  if (!p1 || !p2) return 0;
+  const dLng = (p2.lng - p1.lng) * Math.PI / 180;
+  const lat1 = p1.lat * Math.PI / 180;
+  const lat2 = p2.lat * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  let heading = (Math.atan2(y, x) * 180) / Math.PI;
+  return (heading + 360) % 360;
+}
+
 export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
+  const [vehicleHeading, setVehicleHeading] = useState(0);
   const [directionsCache, setDirectionsCache] = useState({});
   const [animPath, setAnimPath] = useState([]);
   const mapRef = useRef(null);
@@ -222,11 +235,21 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
 
     let index = 0;
     setDispatchIndex(0);
+    setVehicleHeading(0);
+
     const interval = window.setInterval(() => {
       if (index >= animPath.length - 1) {
         window.clearInterval(interval);
         return;
       }
+      
+      // Calculate rotation towards next ping
+      const p1 = animPath[index];
+      const p2 = animPath[index + 1];
+      if (p1 && p2) {
+        setVehicleHeading(computeHeading(p1, p2));
+      }
+
       index += 1;
       setDispatchIndex(index);
     }, 150); // Speed optimized for road curve smoothing
@@ -383,16 +406,21 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           <Marker
             position={animPath[dispatchIndex]}
             icon={simVehicleType === 'heli' ? {
-              path: 'M17.42 12.06L16 11V6H14L10 9H3C2.45 9 2 9.45 2 10V14C2 14.55 2.45 15 3 15H10L14 18V13L16 12V16L18 16.5V13.5L20.5 14L22 12L17.42 12.06Z M12 3H14V5H12V3Z M12 19H14V21H12V19Z M2 3H10V5H2V3Z', // Heli SVG path
+              // The Heli SVG points UP naturally, so rotation maps perfectly to 0=North
+              path: 'M17.42 12.06L16 11V6H14L10 9H3C2.45 9 2 9.45 2 10V14C2 14.55 2.45 15 3 15H10L14 18V13L16 12V16L18 16.5V13.5L20.5 14L22 12L17.42 12.06Z M12 3H14V5H12V3Z M12 19H14V21H12V19Z M2 3H10V5H2V3Z', 
               fillColor: '#0ea5e9',
               fillOpacity: 1,
-              scale: 1.5,
+              scale: 1.1,
+              rotation: vehicleHeading,
               anchor: new window.google.maps.Point(12, 12),
             } : {
-              path: 'M20,8h-3V4H3C1.9,4,1,4.9,1,6v11h2c0,1.66,1.34,3,3,3s3-1.34,3-3h6c0,1.66,1.34,3,3,3s3-1.34,3-3h2v-5L20,8z M6,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S6.55,18,6,18z M19.5,9.5l1.96,2.5H17V9.5H19.5z M18,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S18.55,18,18,18z', // Truck SVG path
+              // The Truck SVG points LEFT normally. We offset internal rotation mentally or via SVG.
+              // To offset rotation easily, we just add 90 or 180 to vehicleHeading. Truck facing left means -90 deg.
+              path: 'M20,8h-3V4H3C1.9,4,1,4.9,1,6v11h2c0,1.66,1.34,3,3,3s3-1.34,3-3h6c0,1.66,1.34,3,3,3s3-1.34,3-3h2v-5L20,8z M6,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S6.55,18,6,18z M19.5,9.5l1.96,2.5H17V9.5H19.5z M18,18c-0.55,0-1-0.45-1-1s0.45-1,1-1s1,0.45,1,1S18.55,18,18,18z',
               fillColor: '#22c55e',
               fillOpacity: 1,
-              scale: 1.5,
+              scale: 0.9,
+              rotation: vehicleHeading - 90, // Fix truck's orthogonal SVG orientation!
               anchor: new window.google.maps.Point(12, 12)
             }}
             zIndex={100}
