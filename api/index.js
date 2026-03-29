@@ -133,9 +133,9 @@ function scoreCell(cellPoint, scenario) {
       });
     }
 
-    // Always treat the visually defined red circle (+35% extra buffer area) as an impassable barrier
+    // Always treat the visually defined red circle (+60% extra buffer area) as an impassable barrier
     // This heavy buffer guarantees that Google Directions API path simplifications and straight-lining never clip into the actual visual red hazard zones!
-    if (distanceKm <= hazard.radiusKm * 1.35) {
+    if (distanceKm <= hazard.radiusKm * 1.6) {
       blocked = true;
     }
   });
@@ -445,7 +445,7 @@ function buildResponseScenario(scenario) {
     
     let isSafe = true;
     for (const h of scenario.hazards) {
-      if (haversineDistance(point, h.center) <= h.radiusKm * 1.1) {
+      if (haversineDistance(point, h.center) <= h.radiusKm * 1.5) {
          isSafe = false;
          break;
       }
