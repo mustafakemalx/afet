@@ -204,7 +204,8 @@ export default function MapComponent({
                  for (const pt of path) {
                     if (breached) break;
                     for (const hazard of scenario.hazards) {
-                       if (haversineDistance({lat: pt.lat(), lng: pt.lng()}, hazard.center) <= hazard.radiusKm * 1.15) {
+                       const hCenterP = { lat: hazard.center[0], lng: hazard.center[1] };
+                       if (getDistanceKm({lat: pt.lat(), lng: pt.lng()}, hCenterP) <= hazard.radiusKm * 1.15) {
                           breached = true;
                           break;
                        }
