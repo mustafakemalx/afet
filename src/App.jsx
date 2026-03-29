@@ -449,7 +449,10 @@ function App() {
 
         <section className="map-stage">
           <MapComponent
-            scenario={{ ...selectedScenario, hazards: visibleHazards }}
+            scenario={{ 
+              ...selectedScenario, 
+              hazards: isSimulation ? visibleHazards : selectedScenario?.hazards 
+            }}
             routeData={routeData}
             mapStyle={mapStyle}
             activeRouteKey={activeRouteKey}
@@ -463,7 +466,10 @@ function App() {
             onHazardCollision={onHazardCollision}
           />
           <Dashboard
-            scenario={{ ...selectedScenario, hazards: visibleHazards }}
+            scenario={{ 
+              ...selectedScenario, 
+              hazards: isSimulation ? visibleHazards : selectedScenario?.hazards 
+            }}
             routeData={routeData}
             activeRouteKey={activeRouteKey}
             setActiveRouteKey={setActiveRouteKey}
