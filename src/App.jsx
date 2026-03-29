@@ -130,7 +130,13 @@ function App() {
       });
 
       setRouteData(response.data);
-      setSelectedScenario(response.data.scenario);
+      
+      const newScenarioState = response.data.scenario;
+      if (scenario && scenario.sites) {
+        newScenarioState.sites = scenario.sites;
+      }
+      setSelectedScenario(newScenarioState);
+      
       setActiveRouteKey(response.data.analysis?.recommendedMode || 'safest');
       addNotification('Görev koridoru hazır. En güvenli rota aktif.', 'success');
       if (response.data.scenario.stats.criticalCount >= 2) {
