@@ -84,9 +84,8 @@ function toLatLngPath(path) {
   return path.map((p) => ({ lat: p[0], lng: p[1] }));
 }
 
-export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive }) {
+export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
-  const [activeInfoWindow, setActiveInfoWindow] = useState(null);
   const [directionsCache, setDirectionsCache] = useState({});
   const [animPath, setAnimPath] = useState([]);
   const mapRef = useRef(null);

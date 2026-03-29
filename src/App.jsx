@@ -30,6 +30,11 @@ function App() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
+  // New earthquake sequence states
+  const [scenarioTime, setScenarioTime] = useState(0);
+  const [visibleHazards, setVisibleHazards] = useState([]);
+  const [activeInfoWindow, setActiveInfoWindow] = useState(null);
+
   const addNotification = (msg, type = 'info') => {
     const id = Date.now() + Math.random();
     const newNotif = {
@@ -76,6 +81,9 @@ function App() {
 
         if (incomingScenarios.length > 0) {
           const firstScenario = incomingScenarios[0];
+          setScenarioTime(0);
+          setVisibleHazards([]);
+          setActiveInfoWindow(null);
           setSelectedScenario(firstScenario);
           setSelectedStartSiteId(firstScenario.defaultRoute.startSiteId);
           setSelectedEndSiteId(firstScenario.defaultRoute.endSiteId);
@@ -83,7 +91,6 @@ function App() {
         }
       } catch (error) {
         console.error('Failed to load scenarios', error);
-        setStatusText('Senaryo verisi yüklenemedi');
       } finally {
         setLoading(false);
         addNotification('Quicpass Komuta Konsolu Başlatıldı.', 'success');
@@ -137,6 +144,38 @@ function App() {
       window.setTimeout(() => setScanPulse(false), 900);
     }
   };
+
+  // Check for newly arriving hazards
+  useEffect(() => {
+    if (selectedScenario?.hazards) {
+      const currentActiveCount = visibleHazards.length;
+      const scheduledHazards = selectedScenario.hazards.filter(h => (h.delaySec || 0) <= scenarioTime);
+      
+      if (scheduledHazards.length > currentActiveCount) {
+        // A new earthquake has just triggered!
+        const newest = scheduledHazards[scheduledHazards.length - 1];
+        addNotification(`YENİ AFET BİLDİRİMİ: ${newest.label}. Sistem rotayı güncelliyor...`, 'danger');
+        setVisibleHazards(scheduledHazards);
+        
+        // Force the map to pan/show this new hazard immediately
+        setActiveInfoWindow(newest.id);
+        
+        // Let's trigger a fresh route recalculation based on the new obstacle
+        if (routeData) {
+          fetchRoute(selectedScenario, selectedStartSiteId, selectedEndSiteId, false);
+        }
+      }
+    }
+  }, [scanPulse, isOffline, selectedScenario, scenarioTime, routeData]);
+
+  // Scenario Timer (ticks up every 1 second when a scenario is active)
+  useEffect(() => {
+    if (!selectedScenario) return;
+    const timer = setInterval(() => {
+      setScenarioTime(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [selectedScenario]);
 
   const handleScenarioSelect = (scenarioId) => {
     const scenario = scenarios.find((entry) => entry.id === scenarioId);
@@ -317,17 +356,21 @@ function App() {
 
         <section className="map-stage">
           <MapComponent
-            scenario={selectedScenario}
+            scenario={{ ...selectedScenario, hazards: visibleHazards }}
             routeData={routeData}
             mapStyle={mapStyle}
             activeRouteKey={activeRouteKey}
             dispatchActive={dispatchActive}
+            activeInfoWindow={activeInfoWindow}
+            setActiveInfoWindow={setActiveInfoWindow}
           />
           <Dashboard
-            scenario={selectedScenario}
+            scenario={{ ...selectedScenario, hazards: visibleHazards }}
             routeData={routeData}
             activeRouteKey={activeRouteKey}
             setActiveRouteKey={setActiveRouteKey}
+            activeInfoWindow={activeInfoWindow}
+            setActiveInfoWindow={setActiveInfoWindow}
           />
         </section>
       </main>

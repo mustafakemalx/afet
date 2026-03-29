@@ -39,7 +39,11 @@ const SCENARIOS = [
     ],
     defaultRoute: { startSiteId: 'cmd', endSiteId: 'rescue' },
     hazards: [
-      { id: 'hz-1', type: 'collapse', label: 'Blok Halinde Yapısal Çökme', center: [36.2002, 36.1577], radiusKm: 1.2, severity: 0.96 }, // Tüm alanı kapsayacak şekilde büyütüldü
+      { id: 'hz-1', type: 'collapse', label: 'Ana Sarsıntı: Antakya Merkez', center: [36.2002, 36.1577], radiusKm: 1.2, severity: 0.96, delaySec: 0 },
+      { id: 'hz-2', type: 'collapse', label: 'Artçı: Defne Fay Çöküntüsü', center: [36.1859, 36.1499], radiusKm: 0.8, severity: 0.82, delaySec: 10 },
+      { id: 'hz-3', type: 'collapse', label: 'Artçı: Serinyol Ağır Hasar', center: [36.2068, 36.1728], radiusKm: 0.5, severity: 0.88, delaySec: 25 },
+      { id: 'hz-4', type: 'collapse', label: 'Artçı: Kuzey Otoyolu Yıkımı', center: [36.2137, 36.1814], radiusKm: 0.6, severity: 0.94, delaySec: 40 },
+      { id: 'hz-5', type: 'collapse', label: 'Artçı: Asi Nehri Çevresi Çökme', center: [36.1989, 36.1626], radiusKm: 0.7, severity: 0.75, delaySec: 55 },
     ],
     safeCorridors: [
       { id: 'sc-1', label: 'Kuzey Otoyolu Güvenli Sevk Aksı', path: [[36.1932, 36.1449], [36.2119, 36.1826]], widthKm: 0.42, boost: 30 },

@@ -55,6 +55,8 @@ export default function Dashboard({
   routeData,
   activeRouteKey,
   setActiveRouteKey,
+  activeInfoWindow,
+  setActiveInfoWindow,
 }) {
   const [timelineHour, setTimelineHour] = useState(0);
   const [liveOffset, setLiveOffset] = useState({ mag: 0, pop: 0, haz: 0, blk: 0 });
@@ -152,26 +154,32 @@ export default function Dashboard({
           <AlertTriangle size={16} />
           <span>Afet Etki Özeti</span>
         </div>
-        <div className="metric-grid" style={{gridTemplateColumns: 'repeat(4, 1fr)'}}>
-          <div className="metric-card impact-card">
-            <span>Ortalama Afet Şiddeti</span>
-            <strong style={{fontSize: '1.4rem', color: 'var(--rose)', transition: 'color 0.3s'}}>{magnitude}</strong>
-            <div className="severity-bar">
-              <div className="severity-fill" style={{width: `${Math.min(parseFloat(magnitude) * 10, 100)}%`, transition: 'width 0.5s ease-out'}} />
-            </div>
-          </div>
-          <div className="metric-card impact-card">
-            <div style={{display:'flex', alignItems:'center', gap: '4px'}}><Users size={14} /> <span>Ort. Etkilenen Nüfus</span></div>
-            <strong style={{color: 'var(--amber)'}}>{affectedPop}</strong>
-          </div>
-          <div className="metric-card impact-card">
-            <div style={{display:'flex', alignItems:'center', gap: '4px'}}><MapPin size={14} /> <span>Tehdit Noktası</span></div>
-            <strong>{displayHaz}</strong>
-          </div>
-          <div className="metric-card impact-card">
-            <span>Kapalı Segment</span>
-            <strong style={{color: 'var(--rose)'}}>{displayBlk}</strong>
-          </div>
+        <div className="earthquake-timeline" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
+          {scenario?.hazards?.length === 0 ? (
+             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '12px' }}>Olay bekleniyor...</div>
+          ) : (
+            scenario?.hazards?.map((hazard, idx) => (
+              <div
+                key={hazard.id}
+                className={`incident-row flash-new ${hazard.id === activeInfoWindow ? 'active-incident' : ''}`}
+                onClick={() => setActiveInfoWindow(hazard.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="incident-index">
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#fff' }}>{hazard.label}</h4>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Etki Alanı: Merkez ({(idx * 15) + 3} sn. önce eklendi)</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <strong style={{ display: 'block', fontSize: '1.05rem', color: 'var(--rose)' }}>{(hazard.severity * 10).toFixed(1)} Şiddet</strong>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{hazard.radiusKm} km çap</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
