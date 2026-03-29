@@ -107,7 +107,7 @@ function getDistanceKm(p1, p2) {
   return R * c;
 }
 
-export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints, simVehicleDir, onHazardCollision }) {
+export default function MapComponent({ scenario, routeData, mapStyle, activeRouteKey, dispatchActive, activeInfoWindow, setActiveInfoWindow, simVehicleType, isSimulation, simWaypoints, simVehicleDir, onHazardCollision, onVehicleArrival, onVehicleReturn }) {
   const [dispatchIndex, setDispatchIndex] = useState(0);
   const [vehicleHeading, setVehicleHeading] = useState(0);
   const [directionsCache, setDirectionsCache] = useState({});
@@ -263,10 +263,14 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
   }, [scenario]);
 
   useEffect(() => {
-    if (!animPath || animPath.length === 0) return undefined;
+    if (animPath && animPath.length > 0) {
+      setDispatchIndex(0);
+      setVehicleHeading(0);
+    }
+  }, [animPath]);
 
-    setDispatchIndex(0);
-    setVehicleHeading(0);
+  useEffect(() => {
+    if (!animPath || animPath.length === 0) return undefined;
 
     const interval = window.setInterval(() => {
       setDispatchIndex((prevIndex) => {
@@ -275,13 +279,15 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
         if (simVehicleDir === -1) {
           if (index <= 0) {
             window.clearInterval(interval);
-            return prevIndex;
+            setTimeout(() => { if (onVehicleReturn) onVehicleReturn() }, 0);
+            return 0; // Snap to exact 0
           }
           index -= 1;
         } else {
           if (index >= animPath.length - 1) {
             window.clearInterval(interval);
-            return prevIndex;
+            setTimeout(() => { if (onVehicleArrival) onVehicleArrival() }, 0);
+            return animPath.length - 1; // Snap to final element
           }
           index += 1;
         }

@@ -30,7 +30,9 @@ function App() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // Base state
+  // Vehicle Dispatch States
+  const [dispatchStatus, setDispatchStatus] = useState('idle'); // idle | dispatching | arrived | returning
+  const [vehicleDir, setVehicleDir] = useState(1);
   const [activeInfoWindow, setActiveInfoWindow] = useState(null);
 
   const addNotification = (msg, type = 'info') => {
@@ -109,6 +111,8 @@ function App() {
 
     setIsRouting(true);
     setDispatchActive(false);
+    setDispatchStatus('idle');
+    setVehicleDir(1);
 
     if (withScanAnimation) {
       setScanPulse(true);
@@ -159,6 +163,8 @@ function App() {
     setSelectedStartSiteId(nextStart);
     setSelectedEndSiteId(nextEnd);
     setDispatchActive(false); // Immediately stop vehicle logic when swapping cities
+    setDispatchStatus('idle');
+    setVehicleDir(1);
     setRouteData(null);
     addNotification(`${scenario.city} görev alanı yükleniyor...`, 'neutral');
     fetchRoute(scenario, nextStart, nextEnd, true);
@@ -323,6 +329,42 @@ function App() {
               <h1>{selectedScenario?.name}</h1>
               <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
             </div>
+            
+            {dispatchStatus === 'idle' && (
+              <button className="base-btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem' }} onClick={() => {
+                setDispatchActive(true);
+                setVehicleDir(1);
+                setDispatchStatus('dispatching');
+                addNotification('Saha ekipleri hedefe doğru yola çıktı.', 'info');
+              }}>
+                <Truck size={20} />
+                Saha Ekiplerini Sevk Et
+              </button>
+            )}
+
+            {dispatchStatus === 'dispatching' && (
+              <div style={{ padding: '12px 24px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #38bdf8', borderRadius: '8px', color: '#38bdf8', fontWeight: 'bold' }}>
+                <span className="blink">Ekip Hedefe İlerliyor...</span>
+              </div>
+            )}
+
+            {dispatchStatus === 'arrived' && (
+              <button className="base-btn btn-warning" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem', background: 'var(--amber)', color: 'black' }} onClick={() => {
+                setVehicleDir(-1);
+                setDispatchStatus('returning');
+                addNotification('Hedefe varan ekip koordinasyon merkezine geri çağrılıyor.', 'warning');
+              }}>
+                <Truck size={20} style={{ transform: 'scaleX(-1)' }} />
+                Ekibi Geri Çek
+              </button>
+            )}
+
+            {dispatchStatus === 'returning' && (
+              <div style={{ padding: '12px 24px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid var(--amber)', borderRadius: '8px', color: 'var(--amber)', fontWeight: 'bold' }}>
+                <span className="blink">Ekip Geri Dönüyor...</span>
+              </div>
+            )}
+            
           </div>
         </section>
 
@@ -336,8 +378,18 @@ function App() {
             activeInfoWindow={activeInfoWindow}
             setActiveInfoWindow={setActiveInfoWindow}
             simVehicleType={'truck'}
-            simVehicleDir={1}
+            simVehicleDir={vehicleDir}
             isSimulation={false}
+            onVehicleArrival={() => {
+              setDispatchStatus('arrived');
+              addNotification('Ekip hedefe başarıyla ulaştı ve güvenliği sağladı.', 'success');
+            }}
+            onVehicleReturn={() => {
+              setDispatchStatus('idle');
+              setDispatchActive(false);
+              setVehicleDir(1);
+              addNotification('Ekip güvenli bir biçimde komuta merkezine geri döndü.', 'success');
+            }}
           />
           <Dashboard
             scenario={selectedScenario}
