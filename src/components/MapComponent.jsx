@@ -255,14 +255,12 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
     }
   }, [dispatchActive, activeRouteKey, directionsCache, activeRoute, simVehicleType, scenario]);
 
-  // Keep a ref of the scenario and collision callback to avoid dependency cycle interval resets
+  // Keep a ref of the scenario to avoid dependency cycle interval resets
   const scenarioRef = useRef(scenario);
-  const onHazardCollisionRef = useRef(onHazardCollision);
   
   useEffect(() => {
     scenarioRef.current = scenario;
-    onHazardCollisionRef.current = onHazardCollision;
-  }, [scenario, onHazardCollision]);
+  }, [scenario]);
 
   useEffect(() => {
     if (!animPath || animPath.length === 0) return undefined;
@@ -295,27 +293,12 @@ export default function MapComponent({ scenario, routeData, mapStyle, activeRout
           setVehicleHeading(computeHeading(p1, p2));
         }
 
-        // Feature: Check for dynamic active hazard collisions!
-        if (isSimulation && scenarioRef.current?.hazards) {
-          const hitHazard = scenarioRef.current.hazards.find(h => {
-            const dist = getDistanceKm(p1, {lat: h.center[0], lng: h.center[1]});
-            return dist <= h.radiusKm;
-          });
-
-          if (hitHazard) {
-            window.clearInterval(interval);
-            if (onHazardCollisionRef.current) onHazardCollisionRef.current(hitHazard.id);
-            return index; // Vehicle vanishes, stop updating
-          }
-        }
-
         return index;
       });
     }, 150); // Speed optimized for road curve smoothing
 
-    // Dependency array EXCLUDES scenario and isSimulation to prevent interval restart teleportation!
     return () => window.clearInterval(interval);
-  }, [animPath, simVehicleDir, isSimulation]);
+  }, [animPath, simVehicleDir]);
 
   if (!isLoaded) {
     return (

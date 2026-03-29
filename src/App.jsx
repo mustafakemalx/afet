@@ -30,14 +30,8 @@ function App() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // New earthquake sequence states
-  const [scenarioTime, setScenarioTime] = useState(0);
-  const [visibleHazards, setVisibleHazards] = useState([]);
+  // Base state
   const [activeInfoWindow, setActiveInfoWindow] = useState(null);
-  
-  // Simulation Mode State
-  const [isSimulation, setIsSimulation] = useState(false);
-  const [simState, setSimState] = useState({ text: '', phase: 0, vehicleType: 'truck' });
 
   const addNotification = (msg, type = 'info') => {
     const id = Date.now() + Math.random();
@@ -149,87 +143,10 @@ function App() {
     }
   };
 
-  // Check for newly arriving hazards
+  // Automatically trigger a map view focus when notifications arrive
   useEffect(() => {
-    if (selectedScenario?.hazards) {
-      const currentActiveCount = visibleHazards.length;
-      const scheduledHazards = selectedScenario.hazards.filter(h => (h.delaySec || 0) <= scenarioTime);
-      
-      if (scheduledHazards.length > currentActiveCount) {
-        // A new earthquake has just triggered!
-        const newest = scheduledHazards[scheduledHazards.length - 1];
-        addNotification(`YENİ AFET BİLDİRİMİ: ${newest.label}. Sistem rotayı güncelliyor...`, 'danger');
-        setVisibleHazards(scheduledHazards);
-        
-        // Force the map to pan/show this new hazard immediately
-        setActiveInfoWindow(newest.id);
-        
-        // Let's trigger a fresh route recalculation based on the new obstacle
-        if (routeData) {
-          fetchRoute(selectedScenario, selectedStartSiteId, selectedEndSiteId, false);
-        }
-      }
-    }
-  }, [scanPulse, isOffline, selectedScenario, scenarioTime, routeData]);
-
-  // The 6 Subat Simulation Story Engine
-  useEffect(() => {
-    if (!isSimulation || !selectedScenario) return;
-
-    // Phase 1: Departure
-    if (scenarioTime === 1 && simState.phase < 1) {
-      setSimState({ text: '1. EKİP AFET BÖLGESİNE SEVK EDİLİYOR', phase: 1, vehicleType: 'truck', vehicleDir: 1 });
-      addNotification('SİMÜLASYON: Serinyol Jandarma Eğitim birliğinden kurtarma aracı, 8. Komando Tugayına destek için hareket etti.', 'info');
-      setSelectedStartSiteId('military-2');
-      setSelectedEndSiteId('military-1');
-      setDispatchActive(true);
-    }
-    // We move the blockage narrative to be dynamically triggered by the Map collision!
-    
-    // Phase 3.5: Team 2 Swap (Wait for Team 1 to vanish dynamically at Phase 3 first)
-    if (scenarioTime === 32 && simState.phase === 3) {
-      setSimState({ text: 'DEFNE HASTANESİNDEN 2. EKİP ÇIKIYOR!', phase: 3.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
-      addNotification('SİMÜLASYON: Yapay Zeka komutayı devretti. Defne hastanesinden (field-2) 2. Ekibi yola çıkardı!', 'warning');
-      setSelectedStartSiteId('field-2'); // Swap to Team 2 Base
-      setDispatchActive(false);
-      // MUST trigger new route fetch to generate the physical path correctly
-      fetchRoute(selectedScenario, 'field-2', 'military-1', false);
-    }
-    if (scenarioTime === 35 && (simState.phase === 3.5 || simState.phase === 3)) {
-      setDispatchActive(true); // Team 2 starts moving
-    }
-
-    // Phase 4: Total Blockage
-    if (scenarioTime === 45 && simState.phase < 4) {
-      setSimState({ text: 'BÜYÜK YIKIM: HEDEFE TÜM KARA YOLLARI KOPTU!', phase: 4, vehicleType: 'truck' });
-      addNotification('SİMÜLASYON: Komando Tugayını çevreleyen son 3 yol tahrip oldu. Hedef kara ulaşımına kapalı!', 'danger');
-      setDispatchActive(false); // Stop vehicle
-    }
-
-    // Phase 5: Air Drop Resolution
-    if (scenarioTime === 50 && simState.phase < 5) {
-      setSimState({ text: 'HAVA YARDIMI (AIR-DROP) PROTOKOLÜ: İHA AKTİF', phase: 5, vehicleType: 'heli', vehicleDir: 1 });
-      addNotification('SİMÜLASYON: Yapay Zeka kara müdahalesinin imkansız olduğunu saptadı. Kargo İHA sistemi üzerinden havadan intikal başladı!', 'success');
-      setDispatchActive(true); // Restart vehicle, but this time it will fly
-    }
-    
-    // Phase 6: Mission Success
-    if (scenarioTime === 42 && simState.phase < 6) {
-      setSimState({ text: 'HAVA YARDIMI BAŞARIYLA ULAŞTI', phase: 6, vehicleType: 'heli' });
-      addNotification('SİMÜLASYON TAMAMLANDI: Afet anında otonom rota değiştirme ve hava kurtarma eylemi başarıyla test edildi.', 'success');
-      setIsSimulation(false); // End simulation
-    }
-
-  }, [scenarioTime, isSimulation, selectedScenario, simState.phase]);
-
-  // Scenario Timer (ticks up every 1 second when a scenario is active)
-  useEffect(() => {
-    if (!selectedScenario) return;
-    const timer = setInterval(() => {
-      setScenarioTime(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [selectedScenario]);
+    // Left intentionally blank. The system only tracks visual events now.
+  }, [scanPulse, isOffline, selectedScenario, routeData]);
 
   const handleScenarioSelect = (scenarioId) => {
     const scenario = scenarios.find((entry) => entry.id === scenarioId);
@@ -243,27 +160,11 @@ function App() {
     setSelectedScenario(scenario);
     setSelectedStartSiteId(nextStart);
     setSelectedEndSiteId(nextEnd);
+    setDispatchActive(false); // Immediately stop vehicle logic when swapping cities
     setRouteData(null);
     addNotification(`${scenario.city} görev alanı yükleniyor...`, 'neutral');
     fetchRoute(scenario, nextStart, nextEnd, true);
   };
-
-  const onHazardCollision = useCallback((hazardId) => {
-    if (!isSimulation) return;
-    
-    if (simState.phase === 1) {
-      // 1.seferde giderken karşısına kırmızı alan çıkcak oda rote değiştircek 
-      setSimState({ text: '1. ROTA TIKANDI: YAPAY ZEKA KAVİSLİ ÇEVRE YOLUNA GEÇİYOR', phase: 2.5, vehicleType: 'truck', vehicleDir: 1, waypoints: [[36.2160, 36.1200]] });
-      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Araç kırmızı tehlikeli alanı saptadı! Rota anında değiştirildi (yok olmadı!).', 'warning');
-      // Truck does NOT get deactivated, it immediately pulls the new waypoints and reroutes!
-    }
-    else if (simState.phase === 2.5) {
-      // sonrasında bu alanda 1 tane daha falan kırmızı ya girdiğinde yok olmalı
-      setSimState({ text: 'ÇEVRE YOLU YIKILDI: 1. EKİP GÖREVİ İPTAL!', phase: 3, vehicleType: 'truck', vehicleDir: 1, waypoints: [] });
-      addNotification('SİMÜLASYON GEOMETRİ TETİKLEYİCİ: Çevre yolu enkazında aracın bağlantısı koptu. Araç kırmızı alanda yok oldu! Görev Devri Hazırlanıyor...', 'danger');
-      setDispatchActive(false); // Instant vanish
-    }
-  }, [isSimulation, simState.phase]);
 
   const handleRefresh = () => {
     fetchRoute(selectedScenario, selectedStartSiteId, selectedEndSiteId, true);
@@ -424,62 +325,30 @@ function App() {
               <h1>{selectedScenario?.name}</h1>
               <p className="mission-brief">{selectedScenario?.mission?.brief}</p>
             </div>
-            {!isSimulation && simState.phase === 0 && selectedScenario?.city === 'Hatay' && (
-              <button className="base-btn btn-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem', background: 'var(--rose)', color: 'white' }} onClick={() => {
-                setIsSimulation(true);
-                setScenarioTime(0);
-                setVisibleHazards([]);
-                setActiveInfoWindow(null);
-                setDispatchActive(false);
-                setSelectedStartSiteId('military-2');
-                setSelectedEndSiteId('military-1');
-                setSimState({ text: 'Simülasyon Başlıyor...', phase: 0, vehicleType: 'truck', vehicleDir: 1 });
-              }}>
-                <Orbit size={20} className="spin" />
-                6 Şubat Senaryosunu Başlat
-              </button>
-            )}
-            
-            {!isSimulation && selectedScenario?.city !== 'Hatay' && (
-              <button className="base-btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem' }} onClick={() => {
-                setDispatchActive(true);
-                setSimState({ vehicleType: 'truck', vehicleDir: 1 });
-              }}>
-                <Truck size={20} />
-                Saha Ekiplerini Sevk Et
-              </button>
-            )}
-            {isSimulation && (
-              <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid var(--rose)', padding: '12px 24px', borderRadius: '8px', color: 'white', fontWeight: 'bold' }}>
-                <span className="blink">{simState.text}</span>
-              </div>
-            )}
+            <button className="base-btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '1.05rem' }} onClick={() => {
+              setDispatchActive(true);
+            }}>
+              <Truck size={20} />
+              Saha Ekiplerini Sevk Et
+            </button>
           </div>
         </section>
 
         <section className="map-stage">
           <MapComponent
-            scenario={{ 
-              ...selectedScenario, 
-              hazards: isSimulation ? visibleHazards : selectedScenario?.hazards 
-            }}
+            scenario={selectedScenario}
             routeData={routeData}
             mapStyle={mapStyle}
             activeRouteKey={activeRouteKey}
             dispatchActive={dispatchActive}
             activeInfoWindow={activeInfoWindow}
             setActiveInfoWindow={setActiveInfoWindow}
-            simVehicleType={simState.vehicleType}
-            simVehicleDir={simState.vehicleDir || 1}
-            isSimulation={isSimulation}
-            simWaypoints={simState.waypoints}
-            onHazardCollision={onHazardCollision}
+            simVehicleType={'truck'}
+            simVehicleDir={1}
+            isSimulation={false}
           />
           <Dashboard
-            scenario={{ 
-              ...selectedScenario, 
-              hazards: isSimulation ? visibleHazards : selectedScenario?.hazards 
-            }}
+            scenario={selectedScenario}
             routeData={routeData}
             activeRouteKey={activeRouteKey}
             setActiveRouteKey={setActiveRouteKey}
